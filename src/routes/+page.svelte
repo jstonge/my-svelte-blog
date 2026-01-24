@@ -1,0 +1,20 @@
+<script>
+  import Meta from "$lib/components/Meta.svelte";
+  import Home from "$lib/components/Home.svelte";
+
+  // To change when we can, it is pudding property
+  const preloadFont = [
+    "/assets/fonts/atlas/AtlasGrotesk-Regular-Web.woff2",
+    "/assets/fonts/atlas/AtlasGrotesk-Bold-Web.woff2",
+    "/assets/fonts/atlas/AtlasTypewriter-Medium-Web.woff2"
+  ];
+
+</script>
+
+<Meta 
+  title="Website template"
+  description="TODO"
+  {preloadFont}
+/>
+
+<Home />

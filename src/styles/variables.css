@@ -1,0 +1,31 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-beige: rgb(244, 239, 234);
+
+  /* Extended grey palette */
+  --color-gray-25: rgb(252, 252, 252);
+  --color-gray-50: rgb(247, 247, 247);
+  --color-gray-100: rgb(239, 239, 239);
+  --color-gray-200: rgb(223, 223, 223);
+  --color-gray-300: rgb(202, 202, 202);
+  --color-gray-400: rgb(168, 168, 168);
+  --color-gray-500: rgb(135, 135, 135);
+  --color-gray-600: rgb(109, 109, 109);
+  --color-gray-700: rgb(78, 78, 78);
+  --color-gray-800: rgb(55, 55, 55);
+  --color-gray-850: rgb(46, 46, 46);
+  --color-gray-900: rgb(38, 38, 38);
+  --color-gray-950: rgb(31, 31, 31);
+  --color-gray-1000: rgb(25, 25, 25);
+
+  /* Brand colors */
+  --color-uvm-green: rgb(21, 71, 52);
+  --color-uvm-gold: rgb(255, 209, 00);
+  --color-electric-green: #3AE660;
+  --color-yellow: #e5e338;
+}

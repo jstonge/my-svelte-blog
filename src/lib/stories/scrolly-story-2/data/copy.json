@@ -1,0 +1,66 @@
+{
+	"title": "Scrolly story 2",
+	"subtitle": "Fullscreen mode",
+	"authors": [
+        { 
+			"name": "Jonathan St-Onge", 
+			"url": "https://complexstories.uvm.edu/author/jonathan-st-onge" 
+		},
+        { 
+			"name": "Ben Cooley", 
+			"url": "https://complexstories.uvm.edu/author/ben-dexter-cooley" 
+		}
+    ],
+	"date": "Aug 15, 2025",
+	"SectionTitle": "Hello world",
+	"introduction": [
+		{
+			"type": "markdown",
+			"value": "There are many different ways to structure code to do visual data essays."
+		},
+		{
+			"type": "markdown",
+			"value": "Here's an example of a background plot evolving with content."
+		}
+	],
+	"steps": [
+		{
+			"type": "markdown",
+			"value": "2001"
+		},
+		{
+			"type": "markdown",
+			"value": "2004"
+		},
+		{
+			"type": "markdown",
+			"value": "2007"
+		},
+		{
+			"type": "markdown",
+			"value": "2010"
+		},
+		{
+			"type": "markdown",
+			"value": "2013"
+		},
+		{
+			"type": "markdown",
+			"value": "2016"
+		},
+		{
+			"type": "markdown",
+			"value": "2019"
+		},
+		{
+			"type": "markdown",
+			"value": "2022"
+		}
+	],
+	"conclusion": [
+		{
+			"type": "markdown",
+			"value": "In conclusion, we saw how to programmatically have a scrolly story with content on the left and a shifting plot on the right."
+		}
+	]
+}

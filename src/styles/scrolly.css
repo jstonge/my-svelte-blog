@@ -1,0 +1,183 @@
+/* =============================================================================
+   STORY LAYOUT
+   Full-width container for scrollytelling stories
+   ============================================================================= */
+
+.story {
+    width: 100%;
+}
+
+/* Prose sections within stories get centered treatment */
+.story .prose {
+    max-width: 600px;
+    margin-inline: auto;
+    margin-top: 2rem;
+    padding-inline: 1rem;
+}
+
+/* Default section spacing */
+.story #intro {
+    margin-bottom: 2rem;
+}
+
+.story h2.prose {
+    margin-top: 4rem;
+}
+
+.story #conclusion {
+    margin-bottom: 4rem;
+}
+
+/* =============================================================================
+   SCROLLY CONTENT STYLES
+   Base styles for scrolly content areas
+   ============================================================================= */
+
+.scrolly-content {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.scrolly-content .spacer {
+    height: 65vh;
+}
+
+.scrolly-content .step {
+    height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    margin: 0 auto;
+}
+
+/* Default step box styling */
+.scrolly-content .step > * {
+    padding: 1rem;
+    background: #f5f5f5;
+    color: #ccc;
+    border-radius: 5px;
+    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.2);
+    transition: all 500ms ease;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Active step styling */
+.scrolly-content .step.active > * {
+    background: white;
+    color: black;
+}
+
+.scrolly-content .step-content {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* =============================================================================
+   SCROLLY LAYOUT PATTERNS
+   ============================================================================= */
+
+/* Layout 1: Side-by-side (content left, chart right) */
+.scrolly-with-chart {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr minmax(450px, 45%);
+    gap: 2rem;
+    align-items: start;
+    padding-left: var(--page-padding);
+    padding-right: var(--page-padding);
+}
+
+.scrolly-with-chart .scrolly-chart {
+    position: sticky;
+    top: calc(50vh - 20vh);
+    height: 80vh;
+    max-height: 600px;
+    grid-column: 2;
+}
+
+.scrolly-with-chart .scrolly-content {
+    grid-column: 1;
+    margin: 0;
+    max-width: none;
+}
+
+.scrolly-with-chart .scrolly-content .step > * {
+    max-width: 400px;
+}
+
+@media (max-width: 768px) {
+    .scrolly-with-chart {
+        grid-template-columns: 1fr;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .scrolly-with-chart .scrolly-chart {
+        position: sticky;
+        top: calc(50vh - 25vh);
+        height: 60vh;
+        grid-column: 1;
+        grid-row: 1;
+        width: 100%;
+        padding: 0 0.5rem;
+    }
+
+    .scrolly-with-chart .scrolly-content {
+        grid-column: 1;
+        grid-row: 2;
+        padding-left: var(--page-padding);
+        padding-right: var(--page-padding);
+    }
+
+    .scrolly-with-chart .scrolly-content .step > * {
+        max-width: 100%;
+    }
+}
+
+/* Layout 2: Fullscreen background with centered text overlay */
+.scrolly-fullscreen {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+}
+
+.scrolly-fullscreen .scrolly-chart {
+    position: sticky;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+.scrolly-fullscreen .scrolly-content {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    pointer-events: none;
+}
+
+.scrolly-fullscreen .scrolly-content .step > * {
+    pointer-events: auto;
+}
+
+.scrolly-fullscreen .scrolly-content .step {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scrolly-fullscreen .scrolly-content .step > * {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+}

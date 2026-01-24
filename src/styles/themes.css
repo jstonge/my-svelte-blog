@@ -1,0 +1,74 @@
+/* =============================================================================
+   DARK MODE (system preference)
+   ============================================================================= */
+
+.dark {
+  --color-bg: var(--color-gray-100);
+  --color-fg: var(--color-black);
+  --color-primary: var(--color-black);
+  --color-link: var(--color-black);
+  --color-border: var(--color-gray-300);
+}
+
+/* =============================================================================
+   THEME DARK (for stories with dark backgrounds)
+   Usage: Add class="theme-dark" to your story container
+   Set custom colors with CSS variables:
+     style="--theme-bg: #353839; --theme-footer: #414A4C;"
+   ============================================================================= */
+
+body:has(.theme-dark) {
+  --color-bg: var(--theme-bg, #353839);
+  --color-fg: white;
+  --color-primary: white;
+  --color-link: white;
+  --color-border: rgba(255, 255, 255, 0.2);
+  --color-gray-700: rgba(255, 255, 255, 0.8);
+  --color-gray-900: white;
+  --color-tertiary-gray: rgba(255, 255, 255, 0.7);
+}
+
+body:has(.theme-dark) .header {
+  background: var(--theme-bg, #353839);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body:has(.theme-dark) .header .site-title,
+body:has(.theme-dark) .header .about-button,
+body:has(.theme-dark) .header .icon-button {
+  color: white;
+}
+
+body:has(.theme-dark) .header.scrolled {
+  background: var(--theme-bg, #353839);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+body:has(.theme-dark) footer.footer {
+  background-color: var(--theme-footer, #414A4C);
+}
+
+body:has(.theme-dark) footer * {
+  color: white;
+}
+
+/* Chart containers in dark theme */
+body:has(.theme-dark) .chart-container {
+  background: var(--theme-bg, #353839);
+}
+
+body:has(.theme-dark) .chart-container text {
+  fill: white;
+}
+
+body:has(.theme-dark) .chart-container line {
+  stroke: rgba(255, 255, 255, 0.2);
+}
+
+body:has(.theme-dark) .chart-container line[stroke="#333"] {
+  stroke: rgba(255, 255, 255, 0.5);
+}
+
+body:has(.theme-dark) .chart-container text[fill="#ccc"] {
+  fill: rgba(255, 255, 255, 0.3);
+}

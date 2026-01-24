@@ -1,0 +1,130 @@
+@import "variables.css";
+@import "fonts.css";
+@import "reset.css";
+@import "themes.css";
+
+/* =============================================================================
+   ROOT TOKENS
+   ============================================================================= */
+
+:root {
+  /* Typography families */
+  --sans: "Atlas Grotesk", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Tiempos Text", "Times New Roman", Times, serif;
+  --mono: "Atlas Typewriter", "SF Mono", Monaco, "Cascadia Code",
+    "Roboto Mono", Consolas, "Courier New", monospace;
+
+  /* Type scale */
+  --font-size-giant: clamp(3rem, 10vw, 4rem);
+  --font-size-xlarge: clamp(1.8rem, 5vw, 3rem);
+  --font-size-large: clamp(1.5rem, 2.5vw, 2.5rem);
+  --font-size-medium: clamp(1rem, 1.75vw, 1.5rem);
+  --font-size-small: clamp(14px, 1.18vw, 1.2rem);
+  --font-size-smallish: clamp(14px, 1vw, 0.9rem);
+  --font-size-xsmall: clamp(12px, 1vw, 0.8rem);
+
+  /* Layout */
+  --page-max-width: 1200px;
+  --page-padding: clamp(1rem, 4vw, 3rem);
+  --nav-height: 4.5rem;
+  --border-radius: 3px;
+
+  /* Motion */
+  --left-tilt: -2deg;
+  --right-tilt: 2deg;
+  --transition-medium: 200ms;
+  --1s: 1ms;
+
+  /* Z-index */
+  --z-overlay: 1000;
+
+  /* Colors (light mode) */
+  --color-bg: var(--color-beige);
+  --color-fg: var(--color-gray-800);
+  --color-primary: var(--color-black);
+  --color-link: var(--color-black);
+  --color-border: var(--color-gray-300);
+}
+
+/* Enable motion when allowed */
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    --1s: 1s;
+  }
+}
+
+/* =============================================================================
+   BASE DOCUMENT
+   ============================================================================= */
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--serif);
+  font-size: var(--font-size-small);
+  transition: background-color 200ms ease;
+}
+
+/* =============================================================================
+   MAIN CONTENT
+   ============================================================================= */
+
+main {
+  flex: 1;
+  padding-top: var(--nav-height);
+}
+
+/* =============================================================================
+   LAYOUT CLASSES
+   ============================================================================= */
+
+/* Centered page layout (for about, etc.) */
+.page {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin-inline: auto;
+  padding-inline: var(--page-padding);
+  padding-top: 1rem;
+  padding-bottom: 5rem;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding-top: 1rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* =============================================================================
+   BASE TEXT STYLES
+   ============================================================================= */
+
+h2 {
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin: 2.5rem 0 1rem;
+}
+
+p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+
+/* =============================================================================
+   MOBILE ADJUSTMENTS
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  p {
+    font-size: 1.2rem;
+  }
+}
