@@ -5,7 +5,7 @@ import ConsentPopup from './ConsentPopup.svelte';
 import DemographicsBox from './Survey.DemographicsBox.svelte';
 
 import { surveyScrollyContent } from '$lib/components/survey/SurveyScrolly.svelte';
-import { postAnswer, upsertAnswer } from '../data/survey.remote.js';
+import { postAnswer, upsertAnswer } from '../data/survey.remote.ts';
 
 let { story, data } = $props();
 
