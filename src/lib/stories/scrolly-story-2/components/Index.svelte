@@ -69,4 +69,5 @@ let tooltip = $state({ visible: false, x: 0, y: 0, content: '' });
         border: none;
         border-radius: 0;
     }
+
 </style>

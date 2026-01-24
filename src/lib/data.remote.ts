@@ -1,25 +1,7 @@
 import * as v from 'valibot';
 import { prerender } from '$app/server';
-// import membersData from '$data/members.csv'
 import storiesData from '$data/stories.csv';
 import { error, redirect } from '@sveltejs/kit';
-
-
-
-// MEMBERS
-
-// export const getMembers = prerender(async () => {
-//     return await membersData
-// });
-
-
-// export const getMember = prerender(
-//     v.string(),
-//     async (slug) => {
-//         return await membersData.filter(d => d.id == slug)
-//     },
-//     { dynamic: true }
-// );
 
 // STORIES 
 

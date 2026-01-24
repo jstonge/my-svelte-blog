@@ -1,9 +1,5 @@
 <script>
     import Meta from "$lib/components/Meta.svelte";
-    import Spinner from "$lib/components/helpers/Spinner.svelte";
-    import About from "$lib/components/About.svelte";
-
-    // import { getMembers } from '$lib/data.remote'
 
      const preloadFont = [
         "/assets/fonts/tiempos/TiemposTextWeb-Regular.woff2",
@@ -17,54 +13,69 @@
 
 <Meta
   title="About"
-  description="Description of the group."
+  description="About."
   {preloadFont}
 />
 
-<!-- <div class="page">
-    <div class="page-header no-logo">
-        <div class="page-header-text">
-            <h1>Who We Are</h1>
+
+<div class="page">
+    <div class="about-layout">
+        <div class="left-hand-side">
+            <h1>About</h1>
+
+
+            <p>I'm a research software engineer at the <a href="https://vermontcomplexsystems.org/">Vermont Complex System Institute</a>, where I did my thesis on the co-evolution of individuals and institutions.</p>
+
+            <p>My thesis project focused on understanding the impact of learning to code in science and how it  influences the research group life cycles in the midst of the computational revolution. Using group-based models, I investigate the potential tension between group and individual benefits,  given individual relative interests or costs to learn to code. I am part of the <a href="https://verso.w3.uvm.edu/">VERSO</a> project, the open source program office at UVM. </p>
+
+            <p>I enjoy going on PhD sidequests, bringing others' works to life, my own theoretical work, examining how people human biases impact the detection deepfakes in the wild, or finding ways to use scientifically large language models.</p>
+
+        </div>
+        <div class="right-hand-side">
+            <img src="/profile.jpg" alt="profile" class="profile-pic"/>
         </div>
     </div>
+</div>
 
-    {#await getMembers()}
-        <Spinner text="Loading members..." />
-    {:then members}
-        <About {members} />
-    {:catch error}
-        <div>
-            <p>Error loading members: {error.message}</p>
-        </div>
-    {/await}
-</div> -->
+
 
 <style>
-    .page-header-text h1 {
-        font-size: 3rem;
-        font-weight: 400;
+    h1 {
+        font-family: "DM Sans", sans-serif;
+        font-weight: 700;
+        margin-top: 10vh;
+        margin-bottom: 3vh;
     }
 
-    .page-header {
+    .about-layout {
+        display: flex;
+        gap: 5rem;
+    }
+
+    .left-hand-side {
+        flex: 1;
+    }
+
+    .right-hand-side {
+        flex-shrink: 0;
         display: flex;
         align-items: flex-start;
-        gap: 3rem;
-        margin-top: 4rem;
+        justify-content: center;
+        margin-top: calc(10vh + 3vh + 4em);
     }
 
-    .page-header-text {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        max-width: 50%;
+    .profile-pic {
+        width: 400px;
     }
 
-     @media (max-width: 960px) {
-        
-        .page-header-text,
-        .page-header.no-logo .page-header-text {
-            max-width: 100%;
+    /* On small screens, stack vertically and hide profile pic */
+    @media only screen and (max-width: 767px) {
+        .about-layout {
+            flex-direction: column;
+        }
+
+        .right-hand-side {
+            display: none;
         }
     }
-
 </style>

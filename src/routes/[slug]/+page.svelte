@@ -1,5 +1,5 @@
 <script>
-  import { getStory } from '$lib/data.remote';
+  import { getStory } from '$lib/data.remote.js';
 
   let { params } = $props();
 
