@@ -3,7 +3,7 @@
     import Spinner from "$lib/components/helpers/Spinner.svelte";
     import About from "$lib/components/About.svelte";
 
-    import { getMembers } from '$lib/data.remote'
+    // import { getMembers } from '$lib/data.remote'
 
      const preloadFont = [
         "/assets/fonts/tiempos/TiemposTextWeb-Regular.woff2",
@@ -21,7 +21,7 @@
   {preloadFont}
 />
 
-<div class="page">
+<!-- <div class="page">
     <div class="page-header no-logo">
         <div class="page-header-text">
             <h1>Who We Are</h1>
@@ -37,7 +37,7 @@
             <p>Error loading members: {error.message}</p>
         </div>
     {/await}
-</div>
+</div> -->
 
 <style>
     .page-header-text h1 {
