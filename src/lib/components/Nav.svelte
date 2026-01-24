@@ -98,7 +98,7 @@
 
   .site-logo {
     height: 5.5rem;
-    margin-top: 5.5rem;
+    margin-top: 6.5rem;
     width: auto;
   }
 
