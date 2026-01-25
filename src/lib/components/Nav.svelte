@@ -97,9 +97,10 @@
   }
 
   .site-logo {
-    height: 5.5rem;
+    height: 4.5rem;
     margin-top: 6.5rem;
     width: auto;
+    box-shadow: -0.25rem 0 1.5rem rgba(0, 0, 0, 0.3);
   }
 
   .site-logo-dark {

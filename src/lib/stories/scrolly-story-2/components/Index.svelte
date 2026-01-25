@@ -55,9 +55,8 @@ let tooltip = $state({ visible: false, x: 0, y: 0, content: '' });
     /* Custom scrolly step boxes for this story */
     :global(.theme-dark .scrolly-content .step > *),
     :global(.theme-dark .scrolly-content .step > * *) {
-        background: white;
-        box-shadow: 1px 1px 30px rgba(252, 220, 252, 1);
-        border: 1px solid plum;
+        box-shadow: 1px 1px 30px rgb(212, 200, 212);
+        border: 1px solid rgb(212, 200, 212);
         border-radius: 6px;
         color: #353839 !important;
     }
@@ -69,5 +68,6 @@ let tooltip = $state({ visible: false, x: 0, y: 0, content: '' });
         border: none;
         border-radius: 0;
     }
+
 
 </style>
