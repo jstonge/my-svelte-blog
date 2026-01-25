@@ -43,7 +43,7 @@
     h1 {
         font-family: "DM Sans", sans-serif;
         font-weight: 700;
-        margin-top: 10vh;
+        margin-top: 2rem;
         margin-bottom: 3vh;
     }
 
@@ -61,7 +61,7 @@
         display: flex;
         align-items: flex-start;
         justify-content: center;
-        margin-top: calc(10vh + 3vh + 4em);
+        margin-top: calc(2rem + 3vh + 4em);
     }
 
     .profile-pic {

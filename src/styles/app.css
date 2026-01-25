@@ -27,7 +27,7 @@
   /* Layout */
   --page-max-width: 1200px;
   --page-padding: clamp(1rem, 4vw, 3rem);
-  --nav-height: 5.5rem;
+  --nav-height: 4.5rem;
   --border-radius: 3px;
 
   /* Motion */
