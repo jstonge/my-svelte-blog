@@ -1,0 +1,38 @@
+{
+	"title": "Geo Scrolly story",
+	"subtitle": "Left-right layout but some geographies!",
+	"authors": [
+        { 
+			"name": "Jonathan St-Onge", 
+			"url": "https://complexstories.uvm.edu/author/jonathan-st-onge" 
+		}
+    ],
+	"date": "Jan 24, 2026",
+	"SectionTitle": "Hello world",
+	"introduction": [
+		{
+			"type": "markdown",
+			"value": "There are many different ways to structure code to do visual data essays."
+		},
+		{
+			"type": "markdown",
+			"value": "We use snippets combined with a copy.json to facilitate non-technical users to share their stories without knowing everything there is to know to get started."
+		}
+	],
+	"steps": [
+		{
+			"type": "markdown",
+			"value": "Montreal has 19 boroughs (arrondissements). Here we see population data from 2011."
+		},
+		{
+			"type": "markdown",
+			"value": "Now let's look at 2016 population data. Notice how some boroughs have grown significantly."
+		}
+	],
+	"conclusion": [
+		{
+			"type": "markdown",
+			"value": "In conclusion, we saw how to programmatically have a scrolly story with content on the left and a shifting plot on the right."
+		}
+	]
+}

@@ -26,3 +26,9 @@ CLAUDE.md
 
 # SQLite
 *.db
+src/lib/stories/geo-story-1/data/raw/
+src/lib/stories/geo-story-1/data/.python-version
+src/lib/stories/geo-story-1/data/hydro_topo.json
+src/lib/stories/geo-story-1/data/city_topo.json
+src/lib/stories/geo-story-1/data/uv.lock
+.gitignore
