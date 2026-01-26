@@ -1,12 +1,27 @@
 <script>
+    import { onMount } from 'svelte';
     import * as d3 from 'd3';
     import * as topojson from 'topojson-client';
 
-    // Import TopoJSON data
-    import districtsTopo from '../data/districts_topo.json';
-    import metadataCsv from '../data/metadata.csv';
-
     let { scrollyIndex } = $props();
+
+    // Remote data URLs
+    const TOPOJSON_URL = 'https://raw.githubusercontent.com/jstonge/dag-montreal/refs/heads/main/src/dag_montreal/defs/transform/input/montreal.topojson';
+    const METADATA_URL = 'https://raw.githubusercontent.com/jstonge/dag-montreal/refs/heads/main/src/dag_montreal/defs/transform/input/metadata.csv';
+
+    // Fetched data
+    let districts = $state([]);
+    let metadataRaw = $state([]);
+
+    // Fetch data on mount
+    onMount(async () => {
+        const [topo, csvText] = await Promise.all([
+            fetch(TOPOJSON_URL).then(r => r.json()),
+            fetch(METADATA_URL).then(r => r.text())
+        ]);
+        districts = topojson.feature(topo, topo.objects.data).features;
+        metadataRaw = d3.csvParse(csvText);
+    });
 
     // Chart dimensions
     let width = $state(800);
@@ -16,11 +31,6 @@
     let innerWidth = $derived(width - margin.left - margin.right);
     let innerHeight = $derived(height - margin.top - margin.bottom);
 
-    // Convert TopoJSON to GeoJSON features
-    let districts = $derived(
-        topojson.feature(districtsTopo, districtsTopo.objects.data).features
-    );
-
     // Determine display mode from scrollyIndex
     // Step 0: Show 2011 population
     // Step 1: Show % change between 2011 and 2016
@@ -28,7 +38,7 @@
 
     // Parse CSV data (year and population are strings from CSV, need to convert)
     let metadata = $derived(
-        metadataCsv.map(d => ({
+        metadataRaw.map(d => ({
             arrondissement: d.arrondissement,
             year: parseInt(d.year),
             population: parseFloat(d.population)
