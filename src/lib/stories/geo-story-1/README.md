@@ -1,6 +1,6 @@
-# Scrolly Story 1: Side-by-Side Layout
+# Geo Story 1
 
-A scrollytelling example with interactive chart transitions.
+A scrollytelling example with interactive geo chart transitions.
 
 ## Structure
 
@@ -14,38 +14,20 @@ scrolly-story-1/
     └── boys-1980.json    # Chart data
 ```
 
-## Features
+## Data Provenance
 
-### Layout
-- **Desktop**: Text on left (max-width: 400px), sticky chart on right (40% width)
-- **Mobile/Tablet**: Stacked layout, full-width chart
-- Uses full viewport width via CSS calc trick
+- [index statcan](https://www12.statcan.gc.ca/census-recensement/index-fra.cfm)
 
-### Chart Interactions
-- **Step 0**: Shuffled bar chart (deterministic)
-- **Step 1**: Sorted bar chart
-- **Step 2**: Sorted lollipop chart
+### Boundary files
 
-### Technical Details
-- Responsive chart using `bind:clientWidth`
-- Smooth transitions with GPU acceleration (`translateZ(0)`)
-- D3.js for scales and axes
-- Svelte 5 runes: `$state`, `$derived`, `$props`
+- [2021 Census – Boundary files](https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm?year=21)
 
-## Usage
+### Profil du recensement (statcan) 
+- [Recensement de la population de 2021](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=F)
+- [Recensement de la population de 2016](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=F)
+- [Recensement de la population de 2011](https://www12.statcan.gc.ca/census-recensement/2011/dp-pd/prof/details/page.cfm?Lang=F&Geo1=DA&Code1=24661504&Geo2=PR&Code2=01&Data=Count&SearchText=24661504&SearchType=Begins&SearchPR=01&B1=All&Custom=&TABID=3)
+- [Recensement de la population de 2006](https://www12.statcan.gc.ca/census-recensement/2006/index-fra.cfm)
+- [Recensement de la population de 2001](https://www12.statcan.gc.ca/francais/census01/home/Index.cfm)
 
-Access at: `/scrolly-story-1`
-
-Edit content in `data/copy.json`:
-```json
-{
-  "title": "Story Title",
-  "subtitle": "Subtitle",
-  "steps": [
-    { "type": "markdown", "value": "Step content..." }
-  ],
-  "conclusion": [
-    { "type": "markdown", "value": "Conclusion..." }
-  ]
-}
-```
+## Tableau popualation par arrondissements
+- [2006-2011](http://ville.montreal.qc.ca/pls/portal/docs/page/mtl_stats_fr/media/documents/01a_population_densit%C9_2011.pdf)
