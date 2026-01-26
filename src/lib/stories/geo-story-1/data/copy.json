@@ -22,11 +22,15 @@
 	"steps": [
 		{
 			"type": "markdown",
-			"value": "Montreal has 19 boroughs (arrondissements). Here we see population data from 2011."
+			"value": "This is Montreal. The city has 19 boroughs (arrondissements), but not all areas merged during the 2002 municipal reorganization. The light gray zones—like Mont-Royal, Westmount, Dorval, and Côte-Saint-Luc—are independent municipalities that chose to 'defuse' and remain separate from the megacity."
 		},
 		{
 			"type": "markdown",
-			"value": "Now let's look at 2016 population data. Notice how some boroughs have grown significantly."
+			"value": "Here we see population data from 2011. The color scale shows population density across the merged boroughs."
+		},
+		{
+			"type": "markdown",
+			"value": "Now let's look at population change between 2011 and 2016. Blue areas grew while red areas declined."
 		}
 	],
 	"conclusion": [

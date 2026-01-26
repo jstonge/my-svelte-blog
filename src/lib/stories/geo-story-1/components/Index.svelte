@@ -10,7 +10,7 @@
     let scrollyIndex = $state({ value: undefined });
 </script>
 
-<ScrollIndicator />
+<!-- <ScrollIndicator /> -->
 
 <article class="story">
     <div class="prose">

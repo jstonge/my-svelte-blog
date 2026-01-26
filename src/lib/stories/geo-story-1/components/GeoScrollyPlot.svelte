@@ -11,6 +11,8 @@
 
     // Fetched data
     let districts = $state([]);
+    let boundary = $state([]);
+    let hydro = $state([]);
     let metadataRaw = $state([]);
 
     // Fetch data on mount
@@ -19,7 +21,10 @@
             fetch(TOPOJSON_URL).then(r => r.json()),
             fetch(METADATA_URL).then(r => r.text())
         ]);
-        districts = topojson.feature(topo, topo.objects.data).features;
+        const features = topojson.feature(topo, topo.objects.data).features;
+        districts = features.filter(f => f.properties.layer === 'districts');
+        boundary = features.filter(f => f.properties.layer === 'boundary');
+        hydro = features.filter(f => f.properties.layer === 'hydro');
         metadataRaw = d3.csvParse(csvText);
     });
 
@@ -32,9 +37,11 @@
     let innerHeight = $derived(height - margin.top - margin.bottom);
 
     // Determine display mode from scrollyIndex
-    // Step 0: Show 2011 population
-    // Step 1: Show % change between 2011 and 2016
-    let showChange = $derived(scrollyIndex !== undefined && scrollyIndex >= 1);
+    // Step 0: Just show Montreal (no data fill)
+    // Step 1: Show 2011 population
+    // Step 2: Show % change between 2011 and 2016
+    let showPopulation = $derived(scrollyIndex !== undefined && scrollyIndex >= 1);
+    let showChange = $derived(scrollyIndex !== undefined && scrollyIndex >= 2);
 
     // Parse CSV data (year and population are strings from CSV, need to convert)
     let metadata = $derived(
@@ -89,9 +96,18 @@
             .domain([-maxChange, 0, maxChange])
     );
 
+    // Check if a district is a non-merged municipality (not in population data)
+    function isNonMerged(arrondissement) {
+        return !pop2011.has(arrondissement);
+    }
+
     // Get fill color based on mode
     function getFillColor(arrondissement) {
-        if (showChange) {
+        if (isNonMerged(arrondissement)) {
+            return 'url(#hatch)'; // Hatched pattern for non-merged municipalities
+        } else if (!showPopulation) {
+            return '#e0e0e0'; // Neutral gray for intro step
+        } else if (showChange) {
             const change = changeMap.get(arrondissement);
             return change !== undefined ? changeColorScale(change) : '#ccc';
         } else {
@@ -102,7 +118,9 @@
 
     // Get tooltip text based on mode
     function getTooltip(arrondissement, nom) {
-        if (showChange) {
+        if (!showPopulation) {
+            return nom;
+        } else if (showChange) {
             const change = changeMap.get(arrondissement);
             const sign = change >= 0 ? '+' : '';
             return `${nom}: ${sign}${change?.toFixed(1)}%`;
@@ -114,12 +132,13 @@
 
     // Projection that fits the districts to the container
     let projection = $derived.by(() => {
-        if (districts.length === 0) return d3.geoMercator();
+        const allFeatures = [...districts, ...hydro];
+        if (allFeatures.length === 0) return d3.geoMercator();
 
         return d3.geoMercator()
             .fitSize([innerWidth, innerHeight], {
                 type: "FeatureCollection",
-                features: districts
+                features: allFeatures
             });
     });
 
@@ -135,7 +154,9 @@
 
 <div class="chart-container" bind:clientWidth={width} bind:clientHeight={height}>
     <div class="year-indicator">
-        {#if showChange}
+        {#if !showPopulation}
+            Montreal
+        {:else if showChange}
             Population Change 2011→2016
         {:else}
             Population 2011
@@ -144,6 +165,26 @@
 
     <svg viewBox={`0 0 ${width} ${height}`}>
         <g transform={`translate(${margin.left},${margin.top})`}>
+            <!-- Boundary (background layer) -->
+            {#each boundary as feature}
+                <path
+                    d={pathGenerator(feature)}
+                    fill="#f0f0f0"
+                    stroke="#999"
+                    stroke-width="1"
+                />
+            {/each}
+
+            <!-- Hydro (water) -->
+            {#each hydro as feature}
+                <path
+                    d={pathGenerator(feature)}
+                    fill="#a6cee3"
+                    stroke="#6baed6"
+                    stroke-width="0.5"
+                />
+            {/each}
+
             <!-- Districts -->
             {#each districts as feature (feature.properties.id || feature.properties.nom)}
                 <path
@@ -179,6 +220,7 @@
     </svg>
 
     <!-- Color legend -->
+    {#if showPopulation}
     <div class="legend">
         {#if showChange}
             <span class="legend-label">-{maxChange?.toFixed(0)}%</span>
@@ -190,6 +232,7 @@
             <span class="legend-label">{maxPopulation?.toLocaleString()}</span>
         {/if}
     </div>
+    {/if}
 </div>
 
 <style>
