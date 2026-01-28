@@ -15,11 +15,7 @@ let hasConsented = $state(false);
 let checkingConsent = $state(true);
 let userFingerprint = $state('');
 
-let surveyScrollyState = $state({
-    scrollyIndex: undefined,
-    isMobile: false,
-    isTablet: false
-});
+let scrollyIndex = $state({ value: undefined });
 
 // Survey answers - typed against schema to catch typos at compile time
 let surveyAnswers: Partial<Record<SurveyField, string | string[]>> = $state({
@@ -73,7 +69,7 @@ let saveAnswer = $derived((field: SurveyField, value: string | number | string[]
 <article class="story theme-dark" id="dark-data-survey">
 
     <section id="survey">
-        {@render surveyScrollyContent(data.survey, surveyScrollyState, userFingerprint, saveAnswer, surveyAnswers)}
+        {@render surveyScrollyContent(data.survey, scrollyIndex, userFingerprint, saveAnswer, surveyAnswers)}
 
         <DemographicsBox {userFingerprint} {saveAnswer} {surveyAnswers}/>
     </section>

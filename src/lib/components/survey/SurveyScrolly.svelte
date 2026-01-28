@@ -15,10 +15,8 @@
         };
     };
 
-    type ScrollyState = {
-        scrollyIndex: number | undefined;
-        isMobile: boolean;
-        isTablet: boolean;
+    type ScrollyIndexObj = {
+        value: number | undefined;
     };
 
     export { surveyScrollyContent };
@@ -29,30 +27,30 @@
      Stories must provide: surveyItems, scrollyState, userFingerprint, saveAnswer, answers -->
 {#snippet surveyScrollyContent(
     surveyItems: SurveyItem[],
-    scrollyState: ScrollyState,
+    scrollyIndexObj: ScrollyIndexObj,
     userFingerprint: string,
     saveAnswer: (field: SurveyField, value: string | number | string[]) => Promise<unknown>,
     answers: Partial<Record<SurveyField, string | string[]>>
 )}
     <div class="scrolly-content survey-scrolly">
-        <Scrolly bind:value={scrollyState.scrollyIndex}>
+        <Scrolly bind:value={scrollyIndexObj.value}>
             {#each surveyItems as item, i}
-                {@const active = scrollyState.scrollyIndex === i}
-                <div class="step" class:active class:mobile={scrollyState.isMobile} class:tablet={scrollyState.isTablet}>
+                {@const active = scrollyIndexObj.value === i}
+                <div class="step" class:active>
                     <div class="step-content">
                         {#if item.type === 'question'}
+                            {@const fieldName = item.value.name}
                             <Question
                                 question={item.value.question}
-                                name={item.value.name}
-                                bind:value={answers[item.value.name]}
+                                name={fieldName}
+                                bind:value={answers[fieldName] as string | string[]}
                                 options={item.value.options}
                                 multiple={item.value.multiple || false}
                                 {userFingerprint}
                                 {saveAnswer}
                             />
                         {:else}
-                            <!-- @ts-ignore - text items have different shape -->
-                            {@render renderTextContent(item)}
+                            {@render renderTextContent(item as any)}
                         {/if}
                     </div>
                 </div>

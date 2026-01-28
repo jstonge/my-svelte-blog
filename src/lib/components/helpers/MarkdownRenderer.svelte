@@ -16,21 +16,22 @@
 
     let { text }: { text: string } = $props();
 
-    const plugins = [
+    // Cast to any - library's plugin types are overly strict
+    const plugins: any[] = [
         gfmPlugin(),
-        { 
-            remarkPlugin: [remarkMath], 
+        {
+            remarkPlugin: [remarkMath],
             rehypePlugin: [rehypeKatex]
         },
-        { 
+        {
             rehypePlugin: [rehypeRaw]
         },
         {
             rehypePlugin: [
-                rehypeHighlight, 
-                { 
-                    ignoreMissing: true, 
-                    languages: { 
+                rehypeHighlight,
+                {
+                    ignoreMissing: true,
+                    languages: {
                         css,
                         html: xml,
                         xml,
@@ -70,7 +71,6 @@
 </script>
 
 <div class="markdown-content">
-    <!-- @ts-ignore - plugin types are complex -->
     <Markdown md={processContent(text)} {plugins} />
 </div>
 
