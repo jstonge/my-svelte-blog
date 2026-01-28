@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	/**
 	 * This component manages which item is most in view for scroll triggering
 	 * example:
@@ -11,7 +13,7 @@
 	 * optional params with defaults
 	 * <Scrolly root={null} top={0} bottom={0} increments={100}>
 	 */
-	
+
 	let {
 		root = null,
 		top = 0,
@@ -21,13 +23,21 @@
 		// add scrollProgress as prop
 		scrollProgress = $bindable(undefined),
 		children
+	}: {
+		root?: Element | null;
+		top?: number;
+		bottom?: number;
+		increments?: number;
+		value?: number | undefined;
+		scrollProgress?: number | undefined;
+		children?: Snippet;
 	} = $props();
 
-	let steps = [];
-	let threshold = [];
-	let nodes = [];
-	let intersectionObservers = [];
-	let container = undefined;
+	let steps: number[] = [];
+	let threshold: number[] = [];
+	let nodes: NodeListOf<Element> | Element[] = [];
+	let intersectionObservers: IntersectionObserver[] = [];
+	let container: HTMLDivElement | undefined = undefined;
 
 function mostInView () {
 	let maxRatio = 0;
@@ -60,9 +70,8 @@ function mostInView () {
 	
 }
 
-	function createObserver(node, index) {
-		const handleIntersect = (e) => {
-			const intersecting = e[0].isIntersecting;
+	function createObserver(node: Element, index: number) {
+		const handleIntersect = (e: IntersectionObserverEntry[]) => {
 			const ratio = e[0].intersectionRatio;
 			steps[index] = ratio;
 			mostInView();
@@ -89,8 +98,10 @@ function mostInView () {
 		for (let i = 0; i < increments + 1; i++) {
 			threshold.push(i / increments);
 		}
-		nodes = container.querySelectorAll(":scope > *:not(iframe)");
-		update();
+		if (container) {
+			nodes = container.querySelectorAll(":scope > *:not(iframe)");
+			update();
+		}
 	});
 
 	$effect(() => {

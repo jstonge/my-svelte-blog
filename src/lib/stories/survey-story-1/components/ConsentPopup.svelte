@@ -1,5 +1,15 @@
-<script>
-    let { onAccept, userFingerprint, saveAnswer } = $props();
+<script lang="ts">
+    import type { SurveyField } from '$lib/server/db/schema';
+
+    let {
+        onAccept,
+        userFingerprint,
+        saveAnswer
+    }: {
+        onAccept: () => Promise<void>;
+        userFingerprint: string;
+        saveAnswer: (field: SurveyField, value: string | number | string[]) => Promise<unknown>;
+    } = $props();
 
     let showPopup = $state(true);
 

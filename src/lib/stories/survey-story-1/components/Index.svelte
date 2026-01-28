@@ -1,16 +1,18 @@
-<script>
+<script lang="ts">
 import { generateFingerprint } from '$lib/utils/browserFingerprint.js';
 
 import ConsentPopup from './ConsentPopup.svelte';
 import DemographicsBox from './Survey.DemographicsBox.svelte';
 
 import { surveyScrollyContent } from '$lib/components/survey/SurveyScrolly.svelte';
-import { postAnswer, upsertAnswer } from '../data/survey.remote.js';
+import { saveAnswer as saveAnswerRemote, getSurveyResponse } from '../data/survey.remote.js';
+import type { SurveyField } from '$lib/server/db/schema';
 
 let { story, data } = $props();
 
 // Reactive variables
 let hasConsented = $state(false);
+let checkingConsent = $state(true);
 let userFingerprint = $state('');
 
 let surveyScrollyState = $state({
@@ -19,80 +21,54 @@ let surveyScrollyState = $state({
     isTablet: false
 });
 
-// Survey answers - keys match question 'name' fields in copy.json
-let surveyAnswers = $state({
+// Survey answers - typed against schema to catch typos at compile time
+let surveyAnswers: Partial<Record<SurveyField, string | string[]>> = $state({
     socialMediaPrivacy: '',
     platformMatters: [],
     relativePreferences: '',
     govPreferences: '',
     polPreferences: '',
     age: '',
-    gender_ord: '',
-    orientation_ord: '',
-    race_ord: ''
+    genderOrd: '',
+    orientationOrd: '',
+    raceOrd: ''
 });
 
-
-
-async function handleConsentAccept() {
-    hasConsented = true;
-
+async function checkExistingConsent() {
     try {
         userFingerprint = await generateFingerprint();
-        console.log('Fingerprint loaded:', userFingerprint);
-
-        // Save consent after fingerprint is ready
-        if (userFingerprint) {
-            await saveAnswer('consent', 'accepted');
-        }
+        const survey = await getSurveyResponse(userFingerprint);
+        hasConsented = !!survey?.consent;
     } catch (err) {
-        console.error('Failed to load fingerprint:', err);
+        console.error('Failed to check existing consent:', err);
+    } finally {
+        checkingConsent = false;
     }
 }
 
+checkExistingConsent();
 
-/**
- * Story-specific saveAnswer adapter
- * Maps form field names to appropriate API calls based on field type
- * Kept here to ensure field mapping stays in sync with surveyAnswers definition above
- */
-function createSaveAnswerHandler(userFingerprint) {
-	return function saveAnswer(field, value) {
-		if (!userFingerprint) {
-			console.warn('Fingerprint not ready yet, skipping save');
-			return Promise.resolve();
-		}
-
-		// Fields that need string-to-ordinal conversion
-		const stringToOrdinalFields = ['consent', 'socialMediaPrivacy', 'institutionPreferences', 'demographicsMatter'];
-
-		// Fields that already have numeric values
-		const numericFields = ['relativePreferences', 'govPreferences', 'polPreferences', 'age', 'gender_ord', 'orientation_ord', 'race_ord'];
-
-		// Handle special cases
-		if (field === 'platformMatters') {
-			// Convert array to comma-separated string for storage
-			const stringValue = Array.isArray(value) ? value.join(',') : value;
-			return upsertAnswer({ fingerprint: userFingerprint, field, value: stringValue });
-		} else if (stringToOrdinalFields.includes(field)) {
-			return postAnswer({ fingerprint: userFingerprint, field, value });
-		} else if (numericFields.includes(field)) {
-			// Convert string numbers to integers
-			const numericValue = parseInt(value, 10);
-			return upsertAnswer({ fingerprint: userFingerprint, field, value: numericValue });
-		} else {
-			console.error(`Unknown field: ${field}`);
-			return Promise.reject(new Error(`Unknown field: ${field}`));
-		}
-	};
+async function handleConsentAccept() {
+    hasConsented = true;
+    try {
+        userFingerprint ||= await generateFingerprint();
+        await saveAnswer('consent', 'accepted');
+    } catch (err) {
+        console.error('Failed to save consent:', err);
+    }
 }
 
-let saveAnswer = $derived(createSaveAnswerHandler(userFingerprint));
+let saveAnswer = $derived((field: SurveyField, value: string | number | string[]) => {
+    if (!userFingerprint) return Promise.resolve();
+    return saveAnswerRemote({ fingerprint: userFingerprint, field, value });
+});
 
 </script>
 
-<!-- Consent Popup -->
-<ConsentPopup onAccept={handleConsentAccept} {userFingerprint} {saveAnswer} />
+<!-- Consent Popup (only show after checking and if not already consented) -->
+{#if !checkingConsent && !hasConsented}
+    <ConsentPopup onAccept={handleConsentAccept} {userFingerprint} {saveAnswer} />
+{/if}
 
 <article class="story theme-dark" id="dark-data-survey">
 

@@ -1,11 +1,28 @@
-<script>
+<script lang="ts">
     import RadioQuestion from './SurveyQuestion.Radio.svelte';
     import CheckboxQuestion from './SurveyQuestion.Checkbox.svelte';
+    import type { SurveyField } from '$lib/server/db/schema';
 
-    let { question, name, value, options, multiple = false, userFingerprint, saveAnswer } = $props();
+    let {
+        question,
+        name,
+        value = $bindable(),
+        options,
+        multiple = false,
+        userFingerprint,
+        saveAnswer
+    }: {
+        question: string;
+        name: SurveyField;
+        value: string | string[];
+        options: { value: string; label: string }[];
+        multiple?: boolean;
+        userFingerprint: string;
+        saveAnswer: (field: SurveyField, value: string | number | string[]) => Promise<unknown>;
+    } = $props();
 
     // Track save state
-    let saveStatus = $state('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    let saveStatus: 'idle' | 'saving' | 'saved' | 'error' = $state('idle');
     let saveMessage = $state('');
 
     async function handleSave() {
@@ -40,20 +57,20 @@
     <CheckboxQuestion
         {question}
         {name}
-        bind:value
+        bind:value={value as string[]}
         {options}
         onchange={handleSave}
-        {saveStatus}
+        saveStatus={saveStatus}
         {saveMessage}
     />
 {:else}
     <RadioQuestion
         {question}
         {name}
-        bind:value
+        bind:value={value as string}
         {options}
         onchange={handleSave}
-        {saveStatus}
+        saveStatus={saveStatus}
         {saveMessage}
     />
 {/if}

@@ -1,8 +1,8 @@
 // Browser fingerprinting using FingerprintJS library
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import FingerprintJS, { type Agent } from '@fingerprintjs/fingerprintjs';
 
 // Cache the FingerprintJS agent promise to avoid re-initialization
-let fpPromise = null;
+let fpPromise: Promise<Agent> | null = null;
 
 /**
  * Generate a stable browser fingerprint using FingerprintJS.

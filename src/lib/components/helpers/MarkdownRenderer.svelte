@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import Markdown from 'svelte-exmarkdown';
     import { gfmPlugin } from 'svelte-exmarkdown/gfm';
     import 'katex/dist/katex.min.css';
@@ -9,12 +9,12 @@
     import rehypeHighlightCodeLines from 'rehype-highlight-code-lines';
     import 'highlight.js/styles/github.css';
     import { base } from '$app/paths';
-    
+
     // Import specific languages like in their docs
     import css from 'highlight.js/lib/languages/css';
     import xml from 'highlight.js/lib/languages/xml';
 
-    let { text } = $props();
+    let { text }: { text: string } = $props();
 
     const plugins = [
         gfmPlugin(),
@@ -44,16 +44,16 @@
         }
     ];
 
-    function processContent(content) {
+    function processContent(content: string): string {
         if (!content) {
             return "";
         }
 
         content = content.replace(/\[\^(\d+)\]/g, '');
-        
+
         // Split content by code blocks and process non-code parts
         const parts = content.split(/(```[\s\S]*?```)/);
-        const processed = parts.map((part, index) => {
+        const processed = parts.map((part: string, index: number) => {
             // Even indices are non-code content, odd indices are code blocks
             if (index % 2 === 0) {
                 // Remove leading whitespace only from non-code content
@@ -62,7 +62,7 @@
             return part; // Preserve code blocks as-is
         });
         content = processed.join('');
-        
+
         content = content.replace(/(src|href)="\/([^"]*?)"/g, `$1="${base}/$2"`);
 
         return content;
@@ -70,6 +70,7 @@
 </script>
 
 <div class="markdown-content">
+    <!-- @ts-ignore - plugin types are complex -->
     <Markdown md={processContent(text)} {plugins} />
 </div>
 

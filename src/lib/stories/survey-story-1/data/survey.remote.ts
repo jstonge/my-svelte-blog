@@ -1,16 +1,14 @@
 import * as v from 'valibot';
 import { command, query } from '$app/server';
 import { db } from '$lib/server/db';
-import { darkDataSurvey } from '$lib/server/db/schema';
+import { darkDataSurvey, type SurveyField } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
-// Valid fields for survey updates (schema uses camelCase)
-const validFields = [
+// Valid fields derived from schema type
+const validFields: SurveyField[] = [
 	'consent',
 	'socialMediaPrivacy',
 	'platformMatters',
-	'institutionPreferences',
-	'demographicsMatter',
 	'relativePreferences',
 	'govPreferences',
 	'polPreferences',
@@ -20,68 +18,39 @@ const validFields = [
 	'raceOrd'
 ];
 
-// Map snake_case field names from frontend to camelCase schema fields
-const fieldNameMap = {
-	'gender_ord': 'genderOrd',
-	'orientation_ord': 'orientationOrd',
-	'race_ord': 'raceOrd'
-};
+// Fields that store numeric values
+const numericFields: SurveyField[] = ['relativePreferences', 'govPreferences', 'polPreferences', 'age', 'genderOrd', 'orientationOrd', 'raceOrd'];
 
-// Normalize field name (convert snake_case to camelCase if needed)
-/** @param {string} field */
-function normalizeFieldName(field) {
-	return fieldNameMap[/** @type {keyof typeof fieldNameMap} */ (field)] || field;
+function isValidField(field: string): field is SurveyField {
+	return validFields.includes(field as SurveyField);
 }
 
-// Remote function to post survey answer (with string value conversion)
-export const postAnswer = command(
-	v.object({ fingerprint: v.string(), value: v.string(), field: v.string() }),
-	async (data) => {
-		const { fingerprint, value } = data;
-		const field = normalizeFieldName(data.field);
-
-		if (!validFields.includes(field)) {
-			throw new Error(`Invalid field: ${field}`);
-		}
-
-		// Check if survey exists
-		const existing = await db
-			.select()
-			.from(darkDataSurvey)
-			.where(eq(darkDataSurvey.fingerprint, fingerprint))
-			.get();
-
-		if (!existing) {
-			// Create new survey with the field
-			await db.insert(darkDataSurvey).values({
-				fingerprint,
-				[field]: value
-			});
-		} else {
-			// Update existing survey
-			await db
-				.update(darkDataSurvey)
-				.set({ [field]: value })
-				.where(eq(darkDataSurvey.fingerprint, fingerprint));
-		}
-
-		console.log(`Saved ${field}:`, value);
-		return { message: `${field} saved successfully` };
+function processValue(field: SurveyField, value: string | number | string[]) {
+	if (field === 'platformMatters' && Array.isArray(value)) {
+		return value.join(',');
 	}
-);
+	if (numericFields.includes(field) && typeof value === 'string') {
+		return parseInt(value, 10);
+	}
+	return value;
+}
 
-// Remote function to upsert survey answer (with direct value - number or string)
-export const upsertAnswer = command(
-	v.object({ fingerprint: v.string(), field: v.string(), value: v.union([v.number(), v.string()]) }),
+// Single entry point for saving survey answers
+export const saveAnswer = command(
+	v.object({
+		fingerprint: v.string(),
+		field: v.string(),
+		value: v.union([v.number(), v.string(), v.array(v.string())])
+	}),
 	async (data) => {
-		const { fingerprint, value } = data;
-		const field = normalizeFieldName(data.field);
+		const { fingerprint, field } = data;
 
-		if (!validFields.includes(field)) {
+		if (!isValidField(field)) {
 			throw new Error(`Invalid field: ${field}`);
 		}
 
-		// Check if survey exists
+		const value = processValue(field, data.value);
+
 		const existing = await db
 			.select()
 			.from(darkDataSurvey)
@@ -89,21 +58,18 @@ export const upsertAnswer = command(
 			.get();
 
 		if (!existing) {
-			// Create new survey with the field
 			await db.insert(darkDataSurvey).values({
 				fingerprint,
 				[field]: value
 			});
 		} else {
-			// Update existing survey
 			await db
 				.update(darkDataSurvey)
 				.set({ [field]: value })
 				.where(eq(darkDataSurvey.fingerprint, fingerprint));
 		}
 
-		console.log(`Upserted ${field}:`, value);
-		return { message: `${field} upserted successfully` };
+		return { message: `${field} saved` };
 	}
 );
 

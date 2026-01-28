@@ -1,7 +1,23 @@
-<script>
-    let { question, name, value = $bindable([]), options, onchange, saveStatus = 'idle', saveMessage = '' } = $props();
+<script lang="ts">
+    let {
+        question,
+        name,
+        value = $bindable([]),
+        options,
+        onchange,
+        saveStatus = 'idle',
+        saveMessage = ''
+    }: {
+        question: string;
+        name: string;
+        value: string[];
+        options: { value: string; label: string }[];
+        onchange: () => void;
+        saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+        saveMessage?: string;
+    } = $props();
 
-    function handleCheckboxChange(optionValue, isChecked) {
+    function handleCheckboxChange(optionValue: string, isChecked: boolean) {
         if (isChecked) {
             value = [...value, optionValue];
         } else {
@@ -23,7 +39,7 @@
                     name={name}
                     value={option.value}
                     checked={value.includes(option.value)}
-                    onchange={(e) => handleCheckboxChange(option.value, e.target.checked)}
+                    onchange={(e) => handleCheckboxChange(option.value, (e.target as HTMLInputElement).checked)}
                 />
                 <span>{option.label}</span>
             </label>

@@ -12,7 +12,7 @@
 </script>
 
 <Meta 
-  title="Website template"
+  title="Svelte dataviz templates"
   description="TODO"
   {preloadFont}
 />

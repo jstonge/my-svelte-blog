@@ -1,7 +1,25 @@
-<script>
+<script lang="ts">
 import { RadioGroup, Label } from "bits-ui";
 
-let { question, name, value = $bindable(), options, errors, onchange, saveStatus = 'idle', saveMessage = '' } = $props();
+let {
+    question,
+    name,
+    value = $bindable(),
+    options,
+    errors,
+    onchange,
+    saveStatus = 'idle',
+    saveMessage = ''
+}: {
+    question: string;
+    name: string;
+    value: string;
+    options: { value: string; label: string }[];
+    errors?: { message: string }[];
+    onchange: () => void;
+    saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+    saveMessage?: string;
+} = $props();
 </script>
 
 <div class="question-text">

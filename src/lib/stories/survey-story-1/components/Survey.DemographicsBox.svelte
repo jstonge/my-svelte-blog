@@ -1,8 +1,18 @@
-<script>
-    let { userFingerprint, saveAnswer, surveyAnswers } = $props();
+<script lang="ts">
+    import type { SurveyField } from '$lib/server/db/schema';
+
+    let {
+        userFingerprint,
+        saveAnswer,
+        surveyAnswers
+    }: {
+        userFingerprint: string;
+        saveAnswer: (field: SurveyField, value: string | number | string[]) => Promise<unknown>;
+        surveyAnswers: Partial<Record<SurveyField, string | string[]>>;
+    } = $props();
 
     // Save each field when changed
-    async function handleChange(field, value) {
+    async function handleChange(field: SurveyField, value: string) {
         surveyAnswers[field] = value;
         if (value !== '' && userFingerprint) {
             await saveAnswer(field, value);
@@ -19,7 +29,7 @@
             <select
                 id="age"
                 bind:value={surveyAnswers.age}
-                onchange={() => handleChange('age', surveyAnswers.age)}>
+                onchange={() => handleChange('age', surveyAnswers.age as string)}>
                 <option value="">Select...</option>
                 <option value="18-24">18-24</option>
                 <option value="25-34">25-34</option>
@@ -34,8 +44,8 @@
             <label for="gender">Gender</label>
             <select
                 id="gender"
-                bind:value={surveyAnswers.gender_ord}
-                onchange={() => handleChange('gender_ord', surveyAnswers.gender_ord)}>
+                bind:value={surveyAnswers.genderOrd}
+                onchange={() => handleChange('genderOrd', surveyAnswers.genderOrd as string)}>
                 <option value="">Select...</option>
                 <option value="0">Women</option>
                 <option value="1">Men</option>
@@ -47,8 +57,8 @@
             <label for="orientation">Sexual Orientation</label>
             <select
                 id="orientation"
-                bind:value={surveyAnswers.orientation_ord}
-                onchange={() => handleChange('orientation_ord', surveyAnswers.orientation_ord)}>
+                bind:value={surveyAnswers.orientationOrd}
+                onchange={() => handleChange('orientationOrd', surveyAnswers.orientationOrd as string)}>
                 <option value="">Select...</option>
                 <option value="0">Straight</option>
                 <option value="1">Bisexual</option>
@@ -61,8 +71,8 @@
             <label for="race">Race/Ethnicity</label>
             <select
                 id="race"
-                bind:value={surveyAnswers.race_ord}
-                onchange={() => handleChange('race_ord', surveyAnswers.race_ord)}>
+                bind:value={surveyAnswers.raceOrd}
+                onchange={() => handleChange('raceOrd', surveyAnswers.raceOrd as string)}>
                 <option value="">Select...</option>
                 <option value="0">White</option>
                 <option value="1">Mixed</option>

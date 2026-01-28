@@ -1,5 +1,5 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { sql, type InferSelectModel } from "drizzle-orm";
 
 export const darkDataSurvey = sqliteTable("dark_data_survey", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -7,8 +7,6 @@ export const darkDataSurvey = sqliteTable("dark_data_survey", {
   consent: integer("consent"),
   socialMediaPrivacy: integer("social_media_privacy"),
   platformMatters: text("platform_matters"),
-  institutionPreferences: integer("institution_preferences"),
-  demographicsMatter: integer("demographics_matter"),
   relativePreferences: integer("relative_preferences"),
   govPreferences: integer("gov_preferences"),
   polPreferences: integer("pol_preferences"),
@@ -18,3 +16,7 @@ export const darkDataSurvey = sqliteTable("dark_data_survey", {
   raceOrd: integer("race_ord"),
   createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 });
+
+// Types derived from schema
+export type DarkDataSurvey = InferSelectModel<typeof darkDataSurvey>;
+export type SurveyField = keyof Omit<DarkDataSurvey, 'id' | 'fingerprint' | 'createdAt'>;

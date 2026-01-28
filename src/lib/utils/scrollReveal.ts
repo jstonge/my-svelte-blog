@@ -27,7 +27,12 @@ import { browser } from '$app/environment';
  * @param {string} options.rootMargin - Root margin for observer
  * @returns {Object} Svelte action object with destroy method
  */
-export function scrollReveal(node, options = {}) {
+interface ScrollRevealOptions {
+	threshold?: number;
+	rootMargin?: string;
+}
+
+export function scrollReveal(node: HTMLElement, options: ScrollRevealOptions = {}) {
 	const {
 		threshold = 0.1,
 		rootMargin = '0px 0px -100px 0px'
@@ -47,7 +52,7 @@ export function scrollReveal(node, options = {}) {
 			entries.forEach((entry) => {
 				// Only reveal when element is entering viewport
 				if (entry.isIntersecting && entry.intersectionRatio > threshold) {
-					entry.target.dataset.revealed = 'true';
+					(entry.target as HTMLElement).dataset.revealed = 'true';
 				}
 			});
 		},

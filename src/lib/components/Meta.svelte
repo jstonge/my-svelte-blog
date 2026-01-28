@@ -1,15 +1,22 @@
 <!-- src/lib/components/Meta.svelte -->
-<script>
+<script lang="ts">
   import { page } from "$app/state"; // Updated for Svelte 5
   import { base } from "$app/paths";
-  
-  let { 
-    title, 
-    description, 
+
+  let {
+    title,
+    description,
     keywords = "",
     image = "/default-og-image.jpg",
     preloadFont = [],
     author = "Vermont Complex Systems Institute"
+  }: {
+    title: string;
+    description: string;
+    keywords?: string;
+    image?: string;
+    preloadFont?: string[];
+    author?: string;
   } = $props();
   
   const baseUrl = "https://vermontcomplexsystems.org"; // Your actual domain
@@ -46,7 +53,7 @@
   <meta name="robots" content="index, follow, max-image-preview:large" />
 
   {#each preloadFont as href}
-    <link rel="preload" {href} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" {href} as="font" type="font/woff2" crossorigin="anonymous" />
   {/each}
   
 </svelte:head>
