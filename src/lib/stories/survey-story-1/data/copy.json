@@ -1,4 +1,10 @@
 {
+	"intro": [
+		{
+			"type": "markdown",
+			"value": "Bulding a survey platform is really just about making CRUD apps."
+		}
+	],
 	"survey": [
 		{
 			"type": "question",

@@ -80,23 +80,61 @@ let {
     }
 
     :global(.radio-button) {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #666;
-        border-radius: 50%;
+        /* Reset native button styles */
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+        padding: 0;
+
+        /* Sizing */
+        width: 1.15em;
+        height: 1.15em;
+        font: inherit;
+
+        /* Visual */
+        color: #666;
         background: white;
+        border: 0.15em solid currentColor;
+        border-radius: 50%;
         cursor: pointer;
-        transition: all 0.2s ease;
+
+        /* Layout for inner dot */
+        display: grid;
+        place-content: center;
+
+        /* Prevent shrinking */
         flex-shrink: 0;
     }
 
+    :global(.radio-button::before) {
+        content: "";
+        width: 0.65em;
+        height: 0.65em;
+        border-radius: 50%;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
+        box-shadow: inset 1em 1em #0891b2;
+    }
+
     :global(.radio-button:hover) {
-        border-color: var(--color-primary, #007acc);
+        color: #0891b2;
     }
 
     :global(.radio-button[data-state="checked"]) {
-        border-width: 6px;
-        border-color: var(--color-primary, #007acc);
+        color: #0891b2;
+    }
+
+    :global(.radio-button[data-state="checked"]::before) {
+        transform: scale(1);
+    }
+
+    :global(.radio-button:focus) {
+        outline: none;
+    }
+
+    :global(.radio-button:focus-visible) {
+        outline: max(2px, 0.15em) solid currentColor;
+        outline-offset: max(2px, 0.15em);
     }
 
     :global(.radio-label) {
