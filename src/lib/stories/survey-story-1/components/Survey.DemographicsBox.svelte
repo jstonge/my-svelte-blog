@@ -86,7 +86,6 @@
     .surveyAnswers-box {
         max-width: 800px;
         margin: 2rem auto;
-        margin-bottom: 75vh;
         padding: 2rem;
         background: rgba(255, 255, 255, 0.05);
         border-radius: 12px;

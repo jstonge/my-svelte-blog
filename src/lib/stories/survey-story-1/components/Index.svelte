@@ -4,6 +4,9 @@ import { generateFingerprint } from '$lib/utils/browserFingerprint.js';
 import ConsentPopup from './ConsentPopup.svelte';
 import DemographicsBox from './Survey.DemographicsBox.svelte';
 
+import ScrollIndicator from '$lib/components/helpers/ScrollIndicator.svelte';
+import StoryHeader from '$lib/components/StoryHeader.svelte';
+import { renderTextContent } from '$lib/components/helpers/ScrollySnippets.svelte'
 import { surveyScrollyContent } from '$lib/components/survey/SurveyScrolly.svelte';
 import { saveAnswer as saveAnswerRemote, getSurveyResponse } from '../data/survey.remote.js';
 import type { SurveyField } from '$lib/server/db/schema';
@@ -66,12 +69,39 @@ let saveAnswer = $derived((field: SurveyField, value: string | number | string[]
     <ConsentPopup onAccept={handleConsentAccept} {userFingerprint} {saveAnswer} />
 {/if}
 
+<ScrollIndicator />
+
 <article class="story theme-dark" id="dark-data-survey">
+    <StoryHeader
+        title={data.title}
+        subtitle={data.subtitle}
+        authors={data.authors}
+        date={data.date}
+    />
+
+    <section id="intro" class="prose">
+        {#each data.intro as item}
+            {@render renderTextContent(item)}
+        {/each}
+    </section>
 
     <section id="survey">
         {@render surveyScrollyContent(data.survey, scrollyIndex, userFingerprint, saveAnswer, surveyAnswers)}
+    </section>
+    
+    <section id="demographics" class="prose">
+        {#each data.postSurvey as item}
+            {@render renderTextContent(item)}
+        {/each}
 
         <DemographicsBox {userFingerprint} {saveAnswer} {surveyAnswers}/>
+    </section>
+
+    <h2 class="prose">Appendix</h2>
+    <section id="appendix" class="prose">
+        {#each data.appendix as item}
+            {@render renderTextContent(item)}
+        {/each}
     </section>
     
 </article>

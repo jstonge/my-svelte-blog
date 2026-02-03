@@ -83,7 +83,8 @@
   .header-right {
     display: flex;
     align-items: center;
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .header-left {
@@ -176,9 +177,14 @@
   }
 
   /* Icons scale with container */
-  .icon-button :global(.icon) {
-    width: 60%;
-    height: 60%;
+  .github-button :global(.icon) {
+    width: 50%;
+    height: 50%;
+  }
+
+  .mobile-menu-button :global(.icon) {
+    width: 70%;
+    height: 70%;
   }
 
   .mobile-menu-button {

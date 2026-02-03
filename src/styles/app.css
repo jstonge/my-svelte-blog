@@ -28,6 +28,8 @@
   --page-max-width: 1200px;
   --page-padding: clamp(1rem, 4vw, 3rem);
   --nav-height: 4.5rem;
+  --padding-top-page: 5.5rem;
+  --padding-bottom-page: 7.5rem;
   --border-radius: 3px;
 
   /* Motion */
@@ -76,6 +78,10 @@ body {
 main {
   flex: 1;
   padding-top: var(--nav-height);
+}
+
+main > :last-child {
+  padding-bottom: var(--padding-bottom-page);
 }
 
 /* =============================================================================

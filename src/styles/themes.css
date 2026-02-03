@@ -21,11 +21,36 @@ body:has(.theme-dark) {
   --color-bg: var(--theme-bg, #353839);
   --color-fg: beige;
   --color-primary: beige;
-  --color-link: beige;
+  --color-link: #7dd3c0;
+  --color-link-hover: #a8e6cf;
   --color-border: rgba(245, 245, 220, 0.2);
   --color-gray-700: rgba(245, 245, 220, 0.8);
   --color-gray-900: beige;
   --color-tertiary-gray: rgba(245, 245, 220, 0.7);
+}
+
+/* Link styles in dark theme */
+body:has(.theme-dark) a:not(.nav-link):not(.site-title):not(.icon-button) {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-decoration-color: rgba(125, 211, 192, 0.4);
+  text-underline-offset: 3px;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+body:has(.theme-dark) a:not(.nav-link):not(.site-title):not(.icon-button):hover {
+  color: var(--color-link-hover);
+  text-decoration-color: var(--color-link-hover);
+}
+
+body:has(.theme-dark) a:not(.nav-link):not(.site-title):not(.icon-button):visited {
+  color: #b8a9c9;
+  text-decoration-color: rgba(184, 169, 201, 0.4);
+}
+
+body:has(.theme-dark) a:not(.nav-link):not(.site-title):not(.icon-button):visited:hover {
+  color: #d4c4e0;
+  text-decoration-color: #d4c4e0;
 }
 
 body:has(.theme-dark) .header {

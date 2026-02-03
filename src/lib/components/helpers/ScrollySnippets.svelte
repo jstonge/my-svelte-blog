@@ -5,7 +5,8 @@
     import type { Snippet } from 'svelte';
 
     type ContentItem = {
-        type: 'html' | 'markdown' | 'math' | 'question' | 'text';
+        type: 'html' | 'markdown' | 'math' | 'question' | 'text' | 'code' | 
+        'language';
         value: string;
     };
 
@@ -25,6 +26,14 @@
     {:else if item.type === "math"}
         <div class="plot-container">
             <Md text={item.value}/>
+        </div>
+    {:else if item.type === "code"}
+        {@const codeValue = Array.isArray(item.value) ? item.value.join('\n') : item.value}
+        <div class="code-block">
+            {#if item.language}
+            <div class="code-language">{item.language}</div>
+            {/if}
+            <Md text={`\`\`\`${item.language || ''}\n${codeValue}\n\`\`\``}/>
         </div>
     {/if}
 {/snippet}

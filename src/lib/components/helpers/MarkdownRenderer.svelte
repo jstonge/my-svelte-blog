@@ -13,6 +13,7 @@
     // Import specific languages like in their docs
     import css from 'highlight.js/lib/languages/css';
     import xml from 'highlight.js/lib/languages/xml';
+    import javascript from 'highlight.js/lib/languages/javascript';
 
     let { text }: { text: string } = $props();
 
@@ -35,7 +36,8 @@
                         css,
                         html: xml,
                         xml,
-                        svelte: xml
+                        svelte: xml,
+                        js: javascript
                     }
                 }
             ]

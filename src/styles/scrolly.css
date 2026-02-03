@@ -41,9 +41,9 @@
     margin: 0 auto;
 }
 
-.scrolly-content .spacer {
-    height: 65vh;
-}
+/* .scrolly-content .spacer {
+    height: 5vh;
+} */
 
 .scrolly-content .step {
     height: 90vh;
