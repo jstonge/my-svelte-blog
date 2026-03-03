@@ -60,20 +60,16 @@
     let tokenDiff = $derived(hoveredRevision ? tokenDiffs[hoveredRevision.revision_idx - 1] : null);
 
     // Token panel mode
-    let panelMode = $state('diff'); // 'diff' | 'first-seen' | 'removed' | 'frequency'
+    let panelMode = $state('diff'); // 'diff' | 'first-seen' | 'frequency'
 
     const modeInfo = {
         'diff': {
             question: 'What changed in this edit?',
-            detail: 'All tokens in the revision. Added in green, reduced in red. E.g. "3+2" = was 3, gained 2.'
+            detail: 'All tokens in the revision. Added in green, reduced in red, struck-through if fully removed. E.g. "3+2" = was 3, gained 2.'
         },
         'first-seen': {
             question: 'What new language was introduced?',
             detail: 'Only tokens appearing for the first time ever in this revision.'
-        },
-        'removed': {
-            question: 'What language got cut?',
-            detail: 'Tokens removed or reduced vs the previous revision. E.g. "3−2" = had 3, lost 2.'
         },
         'frequency': {
             question: 'What are the most repeated words?',
@@ -120,20 +116,6 @@
                 .filter(([token]) => (firstSeen.get(token) ?? 1) === revIdx)
                 .map(([token, count]) => ({ token, count }))
                 .sort((a, b) => b.count - a.count || a.token.localeCompare(b.token));
-        }
-
-        if (panelMode === 'removed') {
-            // Tokens that were in the previous revision but are gone or reduced in this one
-            if (idx === 0) return [];
-            const prev = revisions[idx - 1].tokens;
-            const removed = [];
-            for (const [token, prevCount] of Object.entries(prev)) {
-                const currCount = tokens[token] ?? 0;
-                if (currCount < prevCount) {
-                    removed.push({ token, prevCount, currCount, diff: currCount - prevCount });
-                }
-            }
-            return removed.sort((a, b) => a.diff - b.diff || a.token.localeCompare(b.token));
         }
 
         // 'frequency' — all tokens sorted by count in this revision
@@ -326,7 +308,6 @@
             <div class="mode-selector">
                 <button class:active={panelMode === 'diff'} onclick={() => panelMode = 'diff'}>Diff</button>
                 <button class:active={panelMode === 'first-seen'} onclick={() => panelMode = 'first-seen'}>First seen</button>
-                <button class:active={panelMode === 'removed'} onclick={() => panelMode = 'removed'}>Removed</button>
                 <button class:active={panelMode === 'frequency'} onclick={() => panelMode = 'frequency'}>Frequency</button>
             </div>
             {#if pinnedRevision}
@@ -348,7 +329,7 @@
             <div class="token-grid">
                 {#if panelMode === 'diff'}
                     {#each panelTokenList as { token, count, diff }}
-                        <span class="token-cell" class:cell-added={diff > 0} class:cell-removed={diff < 0}>
+                        <span class="token-cell" class:cell-added={diff > 0} class:cell-removed={diff < 0 && count > 0} class:cell-gone={diff < 0 && count === 0}>
                             {token} <small>{#if diff !== 0}{count - diff}<span class="diff-label">{diff > 0 ? '+' : ''}{diff}</span>{:else}{count}{/if}</small>
                         </span>
                     {/each}
@@ -356,12 +337,6 @@
                     {#each panelTokenList as { token, count }}
                         <span class="token-cell cell-new">
                             {token} <small>&times;{count}</small>
-                        </span>
-                    {/each}
-                {:else if panelMode === 'removed'}
-                    {#each panelTokenList as { token, prevCount, currCount, diff }}
-                        <span class="token-cell" class:cell-gone={currCount === 0} class:cell-removed={currCount > 0}>
-                            {token} <small>{prevCount}<span class="diff-label">{diff}</span>{#if currCount > 0} →{currCount}{/if}</small>
                         </span>
                     {/each}
                 {:else}
