@@ -32,3 +32,5 @@ src/lib/stories/geo-story-1/data/hydro_topo.json
 src/lib/stories/geo-story-1/data/city_topo.json
 src/lib/stories/geo-story-1/data/uv.lock
 .gitignore
+docs/plans/
+.playwright-mcp/

@@ -1,5 +1,6 @@
 // Browser fingerprinting using FingerprintJS library
 import FingerprintJS, { type Agent } from '@fingerprintjs/fingerprintjs';
+import { browser } from '$app/environment';
 
 // Cache the FingerprintJS agent promise to avoid re-initialization
 let fpPromise: Promise<Agent> | null = null;
@@ -11,6 +12,11 @@ let fpPromise: Promise<Agent> | null = null;
  * @returns {Promise<string>} The visitor ID (fingerprint)
  */
 export async function generateFingerprint() {
+    // Only run in browser - FingerprintJS requires window
+    if (!browser) {
+        return '';
+    }
+
     // Initialize FingerprintJS once and cache the promise
     if (!fpPromise) {
         fpPromise = FingerprintJS.load();

@@ -92,7 +92,6 @@
   }
 
   .header-right {
-    gap: 0.5rem;
     justify-content: flex-end;
   }
 
@@ -143,14 +142,15 @@
   }
 
   .about-button {
-    padding: 0.5rem 1rem;
-    font-family: "DM Sans", sans-serif;
-    font-size: 1.3rem;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
     color: var(--color-fg);
     text-decoration: none;
     background: transparent;
     border: none;
-    transition: color 200ms ease;
+    border-radius: 0.5rem;
   }
 
   .about-button:hover {

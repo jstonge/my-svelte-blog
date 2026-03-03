@@ -45,7 +45,10 @@ async function checkExistingConsent() {
     }
 }
 
-checkExistingConsent();
+// Only run in browser - fingerprinting requires window
+$effect(() => {
+    checkExistingConsent();
+});
 
 async function handleConsentAccept() {
     hasConsented = true;
