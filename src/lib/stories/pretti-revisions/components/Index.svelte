@@ -1,5 +1,5 @@
 <script>
-    import { Plot, Line, Dot, RuleX, AxisX, AxisY, BrushX } from 'svelteplot';
+    import { Plot, Line, Dot, RuleX, Rect, AxisX, AxisY, BrushX, Text } from 'svelteplot';
     import { bisector } from 'd3';
     import rawData from '../data/revision-pretti-2026-01-24_82203651.json';
 
@@ -145,8 +145,10 @@
     let mouseX = $state(0);
     let mouseY = $state(0);
 
+    // Title change annotation
+    const TITLE_CHANGE_REV = 160;
     // Explicit margins for the top chart — used both in Plot and mouse handler
-    const MARGIN = { left: 55, right: 15, top: 10, bottom: 10 };
+    const MARGIN = { left: 55, right: 15, top: 30, bottom: 10 };
 
     let lineChartEl = $state(null);
 
@@ -246,6 +248,34 @@
                     style="pointer-events: none"
                 />
             {/if}
+            <RuleX
+                data={[{ x: TITLE_CHANGE_REV }]}
+                x="x"
+                stroke="#999"
+                strokeWidth={1}
+                strokeDasharray="4 3"
+                style="pointer-events: none"
+            />
+            <Text
+                data={[{ x: TITLE_CHANGE_REV - 2, text: '← ICE shooting in Minneapolis' }]}
+                x="x"
+                text="text"
+                frameAnchor="top"
+                textAnchor="end"
+                dy={4}
+                fontSize={10}
+                fill="#666"
+            />
+            <Text
+                data={[{ x: TITLE_CHANGE_REV + 2, text: 'Killing of Alex Pretti →' }]}
+                x="x"
+                text="text"
+                frameAnchor="top"
+                textAnchor="start"
+                dy={4}
+                fontSize={10}
+                fill="#666"
+            />
             <AxisY title="total_tokens" />
         </Plot>
         </div>
@@ -253,6 +283,8 @@
         <Plot
             height={220}
             axes={false}
+            marginLeft={MARGIN.left}
+            marginRight={MARGIN.right}
             x={{ label: 'revision index', domain: fullDomain }}
             y={{ grid: true }}
         >
@@ -264,6 +296,25 @@
                 stroke={d => d.token_diff >= 0 ? '#2ca02c' : '#d62728'}
                 strokeWidth={1.5}
             />
+            <RuleX
+                data={[{ x: TITLE_CHANGE_REV }]}
+                x="x"
+                stroke="#999"
+                strokeWidth={1}
+                strokeDasharray="4 3"
+                style="pointer-events: none"
+            />
+            {#if brush.enabled && brush.x1 != null && brush.x2 != null}
+                <Rect
+                    data={[{ x1: brush.x1, x2: brush.x2 }]}
+                    x1="x1"
+                    x2="x2"
+                    fill="lightgrey"
+                    fillOpacity={0.22}
+                    stroke="black"
+                    style="pointer-events: none"
+                />
+            {/if}
             <BrushX bind:brush />
             <AxisX title="revision index" />
             <AxisY title="Δ tokens" />
