@@ -1,16 +1,25 @@
 <script>
-    import { Plot, Line, Dot, RuleX, Rect, AxisX, AxisY, BrushX, Text } from 'svelteplot';
-    import { bisector } from 'd3';
-    import rawData from '../data/test-2026-01-25_82203651.json';
+    import { Plot, Line, Dot, RuleX, AxisY, Text } from 'svelteplot';
+
+    import unigramData from '../data/test-unigrams-2026-01-25_82203651.json';
+    import bigramData from '../data/test-bigrams-2026-01-25_82203651.json';
+    import RevisionTooltip from './RevisionTooltip.svelte';
+    import TokenPanel from './TokenPanel.svelte';
+    import DeltaChart from './DeltaChart.svelte';
+
+    const datasets = { unigrams: unigramData, bigrams: bigramData };
+    let ngram = $state('bigrams');
 
     // Prepare chart data with token diffs
-    const revisions = rawData.revision_history.map((rev, i, arr) => ({
-        ...rev,
-        token_diff: i === 0 ? 0 : rev.total_tokens - arr[i - 1].total_tokens,
-    }));
+    let revisions = $derived(
+        datasets[ngram].revision_history.map((rev, i, arr) => ({
+            ...rev,
+            token_diff: i === 0 ? 0 : rev.total_tokens - arr[i - 1].total_tokens,
+        }))
+    );
 
     // Precompute all token-level diffs (avoids recomputing on every hover)
-    const tokenDiffs = revisions.map((rev, i) => {
+    let tokenDiffs = $derived(revisions.map((rev, i) => {
         if (i === 0) return { added: [], removed: [] };
         const curr = rev.tokens;
         const prev = revisions[i - 1].tokens;
@@ -27,19 +36,22 @@
             added: top.filter(d => d.diff > 0),
             removed: top.filter(d => d.diff < 0),
         };
-    });
+    }));
 
     // Precompute first revision index where each token appears
-    const firstSeen = new Map();
-    for (const rev of revisions) {
-        for (const token of Object.keys(rev.tokens)) {
-            if (!firstSeen.has(token)) firstSeen.set(token, rev.revision_idx);
+    let firstSeen = $derived.by(() => {
+        const map = new Map();
+        for (const rev of revisions) {
+            for (const token of Object.keys(rev.tokens)) {
+                if (!map.has(token)) map.set(token, rev.revision_idx);
+            }
         }
-    }
+        return map;
+    });
 
     // Brush state for bottom chart → filters top chart (start with first 100)
     let brush = $state({ x1: 1, x2: 100, enabled: true });
-    const fullDomain = [1, revisions.length];
+    let fullDomain = $derived([1, revisions.length]);
 
     // Derive the top chart domain from brush selection
     let topDomain = $derived(
@@ -58,6 +70,9 @@
     let hoveredRevision = $state(null);
     let pinnedRevision = $state(null);
     let tokenDiff = $derived(hoveredRevision ? tokenDiffs[hoveredRevision.revision_idx - 1] : null);
+
+    // Reset pinned revision when switching ngram type
+    $effect(() => { ngram; pinnedRevision = null; hoveredRevision = null; });
 
     // Token panel mode
     let panelMode = $state('diff'); // 'diff' | 'first-seen' | 'frequency'
@@ -127,8 +142,23 @@
     let mouseX = $state(0);
     let mouseY = $state(0);
 
-    // Title change annotation
+    // Annotations: title change + day boundaries
     const TITLE_CHANGE_REV = 160;
+
+    // Compute day boundaries from date_modified
+    let dayBoundaries = $derived.by(() => {
+        const boundaries = [];
+        let prevDay = null;
+        for (const rev of revisions) {
+            const day = rev.date_modified?.slice(0, 10);
+            if (day && day !== prevDay) {
+                if (prevDay) boundaries.push({ rev: rev.revision_idx, day });
+                prevDay = day;
+            }
+        }
+        return boundaries;
+    });
+
     // Explicit margins for the top chart — used both in Plot and mouse handler
     const MARGIN = { left: 55, right: 15, top: 30, bottom: 10 };
 
@@ -156,7 +186,6 @@
 
     function handleChartClick() {
         if (hoveredRevision) {
-            // Toggle pin: click same revision to unpin, or pin a new one
             if (pinnedRevision && pinnedRevision.revision_idx === hoveredRevision.revision_idx) {
                 pinnedRevision = null;
             } else {
@@ -170,7 +199,13 @@
     }
 </script>
 
-<h3 class="page-title"><a href="https://en.wikipedia.org/wiki/Killing_of_Alex_Pretti">Killing of Alex Pretti</a> — {revisions.length} revisions on 2026-01-25</h3>
+<h3 class="page-title">
+    <a href="https://en.wikipedia.org/wiki/Killing_of_Alex_Pretti">Killing of Alex Pretti</a> — {revisions.length} revisions
+    <select class="ngram-select" bind:value={ngram}>
+        <option value="unigrams">Unigrams</option>
+        <option value="bigrams">Bigrams</option>
+    </select>
+</h3>
 
 <div class="layout">
     <div class="charts-col">
@@ -258,140 +293,57 @@
                 fontSize={10}
                 fill="#666"
             />
+            {#each dayBoundaries as { rev, day }}
+                <RuleX
+                    data={[{ x: rev }]}
+                    x="x"
+                    stroke="#b07d2b"
+                    strokeWidth={1}
+                    strokeDasharray="2 3"
+                    style="pointer-events: none"
+                />
+                <Text
+                    data={[{ x: rev + 2, text: day }]}
+                    x="x"
+                    text="text"
+                    frameAnchor="top"
+                    textAnchor="start"
+                    dy={18}
+                    fontSize={9}
+                    fill="#b07d2b"
+                />
+            {/each}
             <AxisY title="total_tokens" />
         </Plot>
         </div>
 
-        <Plot
-            height={220}
-            axes={false}
-            marginLeft={MARGIN.left}
-            marginRight={MARGIN.right}
-            x={{ label: 'revision index', domain: fullDomain }}
-            y={{ grid: true }}
-        >
-            <RuleX
-                data={revisions}
-                x="revision_idx"
-                y1={0}
-                y2="token_diff"
-                stroke={d => d.token_diff >= 0 ? '#2ca02c' : '#d62728'}
-                strokeWidth={1.5}
-            />
-            <RuleX
-                data={[{ x: TITLE_CHANGE_REV }]}
-                x="x"
-                stroke="#999"
-                strokeWidth={1}
-                strokeDasharray="4 3"
-                style="pointer-events: none"
-            />
-            {#if brush.enabled && brush.x1 != null && brush.x2 != null}
-                <Rect
-                    data={[{ x1: brush.x1, x2: brush.x2 }]}
-                    x1="x1"
-                    x2="x2"
-                    fill="lightgrey"
-                    fillOpacity={0.22}
-                    stroke="black"
-                    style="pointer-events: none"
-                />
-            {/if}
-            <BrushX bind:brush />
-            <AxisX title="revision index" />
-            <AxisY title="Δ tokens" />
-        </Plot>
+        <DeltaChart
+            {revisions}
+            {fullDomain}
+            margin={MARGIN}
+            titleChangeRev={TITLE_CHANGE_REV}
+            {dayBoundaries}
+            bind:brush
+        />
     </div>
 
-    <div class="token-panel">
-        <div class="panel-controls">
-            <div class="mode-selector">
-                <button class:active={panelMode === 'diff'} onclick={() => panelMode = 'diff'}>Diff</button>
-                <button class:active={panelMode === 'first-seen'} onclick={() => panelMode = 'first-seen'}>First seen</button>
-                <button class:active={panelMode === 'frequency'} onclick={() => panelMode = 'frequency'}>Frequency</button>
-            </div>
-            {#if pinnedRevision}
-                <button class="unpin-btn" onclick={() => pinnedRevision = null}>unpin</button>
-            {/if}
-        </div>
-        <div class="mode-description">
-            <strong>{modeInfo[panelMode].question}</strong>
-            <span>{modeInfo[panelMode].detail}</span>
-        </div>
-        {#if panelRevision}
-            <h4>
-                Rev {panelRevision.revision_idx}: {panelRevision.name}
-                <span class="token-count">({panelRevision.total_tokens} tokens)</span>
-                {#if !pinnedRevision}
-                    <span class="pin-hint">click to pin</span>
-                {/if}
-            </h4>
-            <div class="token-grid">
-                {#if panelMode === 'diff'}
-                    {#each panelTokenList as { token, count, diff }}
-                        <span class="token-cell" class:cell-added={diff > 0} class:cell-removed={diff < 0 && count > 0} class:cell-gone={diff < 0 && count === 0}>
-                            {token} <small>{#if diff !== 0}{count - diff}<span class="diff-label">{diff > 0 ? '+' : ''}{diff}</span>{:else}{count}{/if}</small>
-                        </span>
-                    {/each}
-                {:else if panelMode === 'first-seen'}
-                    {#each panelTokenList as { token, count }}
-                        <span class="token-cell cell-new">
-                            {token} <small>&times;{count}</small>
-                        </span>
-                    {/each}
-                {:else}
-                    {#each panelTokenList as { token, count }}
-                        <span class="token-cell" class:cell-frequent={count > 1}>
-                            {token} <small>&times;{count}</small>
-                        </span>
-                    {/each}
-                {/if}
-            </div>
-        {:else}
-            <p class="token-panel-placeholder">Hover over a revision to see tokens, click to pin</p>
-        {/if}
-    </div>
+    <TokenPanel
+        {panelRevision}
+        {pinnedRevision}
+        {panelMode}
+        {panelTokenList}
+        {modeInfo}
+        onunpin={() => pinnedRevision = null}
+        onmodechange={(mode) => panelMode = mode}
+    />
 </div>
 
-{#if hoveredRevision}
-    {@const diff = tokenDiffs[hoveredRevision.revision_idx - 1]}
-    <div class="tooltip" style="left: {mouseX + 12}px; top: {mouseY - 12}px;">
-        <div class="tooltip-header">
-            <strong>Rev {hoveredRevision.revision_idx}:</strong> {hoveredRevision.name}
-        </div>
-        <div class="tooltip-meta">
-            <span class="tooltip-date">{new Date(hoveredRevision.date_modified).toLocaleString()}</span>
-            {#if hoveredRevision.revision_comment}
-                <span class="tooltip-comment">{hoveredRevision.revision_comment}</span>
-            {/if}
-        </div>
-        <div class="tooltip-stats">
-            tokens: {hoveredRevision.total_tokens}
-            {#if hoveredRevision.revision_idx > 1}
-                <span class={hoveredRevision.token_diff >= 0 ? 'positive' : 'negative'}>
-                    ({hoveredRevision.token_diff >= 0 ? '+' : ''}{hoveredRevision.token_diff})
-                </span>
-            {/if}
-        </div>
-        {#if hoveredRevision.categories?.length > 0}
-            <div class="tooltip-categories">
-                {#each hoveredRevision.categories as cat}
-                    <span class="tooltip-cat">{cat.replace('Category:', '')}</span>
-                {/each}
-            </div>
-        {/if}
-        {#if diff.added.length > 0 || diff.removed.length > 0}
-            <div class="tooltip-diff">
-                {#each diff.added as { token, diff: d }}
-                    <span class="token-added">{token} (+{d})</span>
-                {/each}
-                {#each diff.removed as { token, diff: d }}
-                    <span class="token-removed">{token} ({d})</span>
-                {/each}
-            </div>
-        {/if}
-    </div>
-{/if}
+<RevisionTooltip
+    revision={hoveredRevision}
+    tokenDiff={tokenDiff}
+    {mouseX}
+    {mouseY}
+/>
 
 <style>
     :global(#content) {
@@ -406,6 +358,17 @@
         color: #333;
         margin: 0.5rem 0;
     }
+    .ngram-select {
+        font-size: 13px;
+        padding: 2px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f8f8f8;
+        color: #333;
+        margin-left: 8px;
+        vertical-align: middle;
+        cursor: pointer;
+    }
     .layout {
         display: flex;
         gap: 1.5rem;
@@ -418,231 +381,5 @@
     .charts-col {
         flex: 0 1 800px;
         min-width: 0;
-    }
-    .tooltip {
-        position: fixed;
-        pointer-events: none;
-        z-index: 1000;
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 8px 10px;
-        font-size: 12px;
-        max-width: 350px;
-        line-height: 1.4;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    }
-    .tooltip-header {
-        font-size: 11px;
-        margin-bottom: 4px;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 4px;
-    }
-    .tooltip-meta {
-        font-size: 10px;
-        color: #888;
-        margin-bottom: 4px;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-    }
-    .tooltip-comment {
-        font-style: italic;
-        color: #555;
-    }
-    .tooltip-categories {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 3px;
-        margin-bottom: 4px;
-    }
-    .tooltip-cat {
-        font-size: 9px;
-        background: #e8e8e8;
-        color: #555;
-        padding: 1px 4px;
-        border-radius: 3px;
-    }
-    .tooltip-stats {
-        margin-bottom: 6px;
-        font-variant-numeric: tabular-nums;
-    }
-    .positive { color: #2ca02c; font-weight: 600; }
-    .negative { color: #d62728; font-weight: 600; }
-    .tooltip-diff {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 3px;
-    }
-    .token-added {
-        background: #d4edda;
-        color: #155724;
-        padding: 1px 4px;
-        border-radius: 3px;
-        font-size: 10px;
-        font-family: monospace;
-    }
-    .token-removed {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 1px 4px;
-        border-radius: 3px;
-        font-size: 10px;
-        font-family: monospace;
-    }
-    .token-panel {
-        flex: 1;
-        min-width: 250px;
-        max-width: 500px;
-        min-height: 120px;
-        max-height: calc(100vh - 4rem);
-        display: flex;
-        flex-direction: column;
-    }
-    .token-panel h4 {
-        margin: 0 0 0.5rem;
-        color: #333;
-        font-size: 14px;
-    }
-    .token-panel h4 .token-count {
-        font-weight: normal;
-        color: #666;
-    }
-    .token-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        flex: 1;
-        overflow-y: auto;
-        align-content: flex-start;
-    }
-    .token-cell {
-        display: inline-flex;
-        align-items: baseline;
-        gap: 3px;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 12px;
-        font-family: monospace;
-        background: #f0f0f0;
-        color: #333;
-    }
-    .token-cell small {
-        font-size: 10px;
-        color: #888;
-    }
-    .cell-added {
-        background: #d4edda;
-        color: #155724;
-    }
-    .cell-added small {
-        color: #155724;
-    }
-    .cell-removed {
-        background: #f8d7da;
-        color: #721c24;
-    }
-    .cell-removed small {
-        color: #721c24;
-    }
-    .panel-controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-    }
-    .mode-selector {
-        display: flex;
-        gap: 0;
-    }
-    .mode-selector button {
-        font-size: 12px;
-        padding: 3px 10px;
-        border: 1px solid #ccc;
-        background: #f8f8f8;
-        color: #666;
-        cursor: pointer;
-        margin-right: -1px;
-    }
-    .mode-selector button:first-child {
-        border-radius: 4px 0 0 4px;
-    }
-    .mode-selector button:last-child {
-        border-radius: 0 4px 4px 0;
-    }
-    .mode-selector button.active {
-        background: #333;
-        color: white;
-        border-color: #333;
-        z-index: 1;
-        position: relative;
-    }
-    .mode-description {
-        font-size: 11px;
-        color: #666;
-        line-height: 1.4;
-        margin-bottom: 0.5rem;
-        padding: 4px 8px;
-        background: #f8f8f8;
-        border-radius: 4px;
-        border-left: 3px solid #333;
-    }
-    .mode-description strong {
-        display: block;
-        color: #333;
-        margin-bottom: 1px;
-    }
-    .diff-label {
-        font-weight: 600;
-        margin-left: 2px;
-    }
-    .cell-new {
-        background: #cce5ff;
-        color: #004085;
-    }
-    .cell-new small {
-        color: #004085;
-    }
-    .cell-gone {
-        background: #f8d7da;
-        color: #721c24;
-        text-decoration: line-through;
-        opacity: 0.85;
-    }
-    .cell-gone small {
-        color: #721c24;
-        text-decoration: none;
-    }
-    .cell-frequent {
-        background: #fff3cd;
-        color: #856404;
-    }
-    .cell-frequent small {
-        color: #856404;
-    }
-    .token-panel-placeholder {
-        color: #999;
-        font-style: italic;
-        font-size: 13px;
-    }
-    .unpin-btn {
-        margin-left: 8px;
-        font-size: 11px;
-        padding: 1px 6px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        background: #f8f8f8;
-        color: #666;
-        cursor: pointer;
-    }
-    .unpin-btn:hover {
-        background: #eee;
-    }
-    .pin-hint {
-        margin-left: 8px;
-        font-size: 11px;
-        color: #999;
-        font-weight: normal;
-        font-style: italic;
     }
 </style>
