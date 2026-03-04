@@ -265,35 +265,37 @@
                     style="pointer-events: none"
                 />
             {/if}
-            <RuleX
-                data={[{ x: TITLE_CHANGE_REV }]}
-                x="x"
-                stroke="#999"
-                strokeWidth={1}
-                strokeDasharray="4 3"
-                style="pointer-events: none"
-            />
-            <Text
-                data={[{ x: TITLE_CHANGE_REV - 2, text: '← ICE shooting in Minneapolis' }]}
-                x="x"
-                text="text"
-                frameAnchor="top"
-                textAnchor="end"
-                dy={4}
-                fontSize={10}
-                fill="#666"
-            />
-            <Text
-                data={[{ x: TITLE_CHANGE_REV + 2, text: 'Killing of Alex Pretti →' }]}
-                x="x"
-                text="text"
-                frameAnchor="top"
-                textAnchor="start"
-                dy={4}
-                fontSize={10}
-                fill="#666"
-            />
-            {#each dayBoundaries as { rev, day }}
+            {#if TITLE_CHANGE_REV >= topDomain[0] && TITLE_CHANGE_REV <= topDomain[1]}
+                <RuleX
+                    data={[{ x: TITLE_CHANGE_REV }]}
+                    x="x"
+                    stroke="#999"
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                    style="pointer-events: none"
+                />
+                <Text
+                    data={[{ x: TITLE_CHANGE_REV - 2, text: '← ICE shooting in Minneapolis' }]}
+                    x="x"
+                    text="text"
+                    frameAnchor="top"
+                    textAnchor="end"
+                    dy={4}
+                    fontSize={10}
+                    fill="#666"
+                />
+                <Text
+                    data={[{ x: TITLE_CHANGE_REV + 2, text: 'Killing of Alex Pretti →' }]}
+                    x="x"
+                    text="text"
+                    frameAnchor="top"
+                    textAnchor="start"
+                    dy={4}
+                    fontSize={10}
+                    fill="#666"
+                />
+            {/if}
+            {#each dayBoundaries.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, day }}
                 <RuleX
                     data={[{ x: rev }]}
                     x="x"
