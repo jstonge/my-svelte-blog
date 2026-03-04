@@ -1,7 +1,7 @@
 <script>
     import { Plot, Line, Dot, RuleX, Rect, AxisX, AxisY, BrushX, Text } from 'svelteplot';
     import { bisector } from 'd3';
-    import rawData from '../data/revision-pretti-2026-01-24_82203651.json';
+    import rawData from '../data/test-2026-01-25_82203651.json';
 
     // Prepare chart data with token diffs
     const revisions = rawData.revision_history.map((rev, i, arr) => ({
@@ -170,7 +170,7 @@
     }
 </script>
 
-<h3 class="page-title"><a href="https://en.wikipedia.org/wiki/Killing_of_Alex_Pretti">Killing of Alex Pretti</a> — {revisions.length} revisions on 2026-01-24</h3>
+<h3 class="page-title"><a href="https://en.wikipedia.org/wiki/Killing_of_Alex_Pretti">Killing of Alex Pretti</a> — {revisions.length} revisions on 2026-01-25</h3>
 
 <div class="layout">
     <div class="charts-col">
@@ -359,6 +359,12 @@
         <div class="tooltip-header">
             <strong>Rev {hoveredRevision.revision_idx}:</strong> {hoveredRevision.name}
         </div>
+        <div class="tooltip-meta">
+            <span class="tooltip-date">{new Date(hoveredRevision.date_modified).toLocaleString()}</span>
+            {#if hoveredRevision.revision_comment}
+                <span class="tooltip-comment">{hoveredRevision.revision_comment}</span>
+            {/if}
+        </div>
         <div class="tooltip-stats">
             tokens: {hoveredRevision.total_tokens}
             {#if hoveredRevision.revision_idx > 1}
@@ -367,6 +373,13 @@
                 </span>
             {/if}
         </div>
+        {#if hoveredRevision.categories?.length > 0}
+            <div class="tooltip-categories">
+                {#each hoveredRevision.categories as cat}
+                    <span class="tooltip-cat">{cat.replace('Category:', '')}</span>
+                {/each}
+            </div>
+        {/if}
         {#if diff.added.length > 0 || diff.removed.length > 0}
             <div class="tooltip-diff">
                 {#each diff.added as { token, diff: d }}
@@ -424,6 +437,31 @@
         margin-bottom: 4px;
         border-bottom: 1px solid #ddd;
         padding-bottom: 4px;
+    }
+    .tooltip-meta {
+        font-size: 10px;
+        color: #888;
+        margin-bottom: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+    .tooltip-comment {
+        font-style: italic;
+        color: #555;
+    }
+    .tooltip-categories {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-bottom: 4px;
+    }
+    .tooltip-cat {
+        font-size: 9px;
+        background: #e8e8e8;
+        color: #555;
+        padding: 1px 4px;
+        border-radius: 3px;
     }
     .tooltip-stats {
         margin-bottom: 6px;
