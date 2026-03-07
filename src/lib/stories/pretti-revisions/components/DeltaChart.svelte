@@ -1,7 +1,7 @@
 <script>
     import { Plot, RuleX, Rect, AxisX, AxisY, BrushX } from 'svelteplot';
 
-    let { revisions, fullDomain, margin, titleChangeRev, dayBoundaries, brush = $bindable() } = $props();
+    let { revisions, fullDomain, margin, titleChanges = [], dayBoundaries, brush = $bindable() } = $props();
 </script>
 
 <Plot
@@ -20,14 +20,16 @@
         stroke={d => d.token_diff >= 0 ? '#2ca02c' : '#d62728'}
         strokeWidth={1.5}
     />
+    {#each titleChanges as { rev }}
     <RuleX
-        data={[{ x: titleChangeRev }]}
+        data={[{ x: rev }]}
         x="x"
         stroke="#999"
         strokeWidth={1}
         strokeDasharray="4 3"
         style="pointer-events: none"
     />
+    {/each}
     {#each dayBoundaries as { rev }}
         <RuleX
             data={[{ x: rev }]}

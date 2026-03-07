@@ -14,4 +14,12 @@
 </script>
 
 <!-- Render the story component with its data -->
-<StoryComponent.default {story} data={copyData} />
+<svelte:boundary>
+  <StoryComponent.default {story} data={copyData} />
+  {#snippet pending()}
+    <p style="text-align:center; padding:2rem; color:#666;">Loading...</p>
+  {/snippet}
+  {#snippet failed(error)}
+    <p style="text-align:center; padding:2rem; color:#d62728;">Error: {error?.message ?? 'Unknown error'}</p>
+  {/snippet}
+</svelte:boundary>

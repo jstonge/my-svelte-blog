@@ -1,81 +1,119 @@
 <script>
     import { Plot, Line, Dot, RuleX, AxisY, Text } from 'svelteplot';
 
-    import unigramData from '../data/test-unigrams-2026-01-25_82203651.json';
-    import bigramData from '../data/test-bigrams-2026-01-25_82203651.json';
+    import { getRevisions, listArticles } from '../api.remote.js';
     import RevisionTooltip from './RevisionTooltip.svelte';
     import TokenPanel from './TokenPanel.svelte';
     import DeltaChart from './DeltaChart.svelte';
 
-    const datasets = { unigrams: unigramData, bigrams: bigramData };
-    let ngram = $state('bigrams');
+    let articles = $state([]);
+    let revisions = $state([]);
+    let loading = $state(true);
+    let error = $state(null);
 
-    // Prepare chart data with token diffs
-    let revisions = $derived(
-        datasets[ngram].revision_history.map((rev, i, arr) => ({
-            ...rev,
-            token_diff: i === 0 ? 0 : rev.total_tokens - arr[i - 1].total_tokens,
-        }))
-    );
+    let identifier = $state('82203651');
 
-    // Precompute all token-level diffs (avoids recomputing on every hover)
-    let tokenDiffs = $derived(revisions.map((rev, i) => {
-        if (i === 0) return { added: [], removed: [] };
-        const curr = rev.tokens;
-        const prev = revisions[i - 1].tokens;
-        const allKeys = new Set([...Object.keys(curr), ...Object.keys(prev)]);
-        const changes = [];
-        for (const key of allKeys) {
-            const c = curr[key] ?? 0;
-            const p = prev[key] ?? 0;
-            if (c !== p) changes.push({ token: key, diff: c - p });
+    let hoveredRevision = $state(null);
+    let pinnedRevision = $state(null);
+
+    async function loadRevisions(id) {
+        loading = true;
+        error = null;
+        hoveredRevision = null;
+        pinnedRevision = null;
+        try {
+            revisions = await getRevisions(id);
+        } catch (e) {
+            error = e;
+        } finally {
+            loading = false;
         }
-        changes.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-        const top = changes;
+    }
+
+    // Initial loads
+    listArticles().then(a => articles = a).catch(() => {});
+    loadRevisions('82203651');
+
+    function handleSelect(e) {
+        const val = e.target.value;
+        if (val && val !== identifier) {
+            identifier = val;
+            loadRevisions(identifier);
+        }
+    }
+
+    // Reconstruct full token state up to a given revision index (lazy, on demand)
+    function getTokensAtRevision(idx) {
+        const accumulated = {};
+        for (let i = 0; i <= idx; i++) {
+            const diff = revisions[i].raw_token_diff;
+            for (const [token, count] of Object.entries(diff)) {
+                if (count <= 0) {
+                    delete accumulated[token];
+                } else {
+                    accumulated[token] = count;
+                }
+            }
+        }
+        return accumulated;
+    }
+
+    // Precompute tooltip diffs from raw_token_diff
+    let tokenDiffs = $derived(revisions.map((rev) => {
+        const diff = rev.raw_token_diff;
+        const changes = Object.entries(diff)
+            .filter(([, count]) => count !== 0)
+            .map(([token, count]) => ({ token, diff: count }));
         return {
-            added: top.filter(d => d.diff > 0),
-            removed: top.filter(d => d.diff < 0),
+            added: changes.filter(d => d.diff > 0),
+            removed: changes.filter(d => d.diff < 0),
         };
     }));
 
     // Precompute first revision index where each token appears
     let firstSeen = $derived.by(() => {
         const map = new Map();
+        const accumulated = {};
         for (const rev of revisions) {
-            for (const token of Object.keys(rev.tokens)) {
-                if (!map.has(token)) map.set(token, rev.revision_idx);
+            for (const [token, count] of Object.entries(rev.raw_token_diff)) {
+                if (count > 0 && !(token in accumulated)) {
+                    map.set(token, rev.revision_idx);
+                }
+                if (count <= 0) {
+                    delete accumulated[token];
+                } else {
+                    accumulated[token] = count;
+                }
             }
         }
         return map;
     });
 
-    // Brush state for bottom chart → filters top chart (start with first 100)
+    // Brush state for bottom chart → filters top chart
     let brush = $state({ x1: 1, x2: 100, enabled: true });
-    let fullDomain = $derived([1, revisions.length]);
+    let fullDomain = $derived([1, revisions.length || 1]);
 
-    // Derive the top chart domain from brush selection
+    $effect(() => {
+        if (revisions.length > 0) {
+            brush = { x1: 1, x2: Math.min(100, revisions.length), enabled: true };
+        }
+    });
+
     let topDomain = $derived(
         brush.enabled && brush.x1 != null && brush.x2 != null
             ? [Math.round(brush.x1), Math.round(brush.x2)]
             : fullDomain
     );
 
-    // Filter revisions for the top chart based on brush
     let filteredRevisions = $derived(
         brush.enabled && brush.x1 != null && brush.x2 != null
             ? revisions.filter(r => r.revision_idx >= Math.round(brush.x1) && r.revision_idx <= Math.round(brush.x2))
             : revisions
     );
 
-    let hoveredRevision = $state(null);
-    let pinnedRevision = $state(null);
     let tokenDiff = $derived(hoveredRevision ? tokenDiffs[hoveredRevision.revision_idx - 1] : null);
 
-    // Reset pinned revision when switching ngram type
-    $effect(() => { ngram; pinnedRevision = null; hoveredRevision = null; });
-
-    // Token panel mode
-    let panelMode = $state('diff'); // 'diff' | 'first-seen' | 'frequency'
+    let panelMode = $state('diff');
 
     const modeInfo = {
         'diff': {
@@ -92,28 +130,26 @@
         }
     };
 
-    // The revision shown in the token panel (pinned takes priority)
     let panelRevision = $derived(pinnedRevision ?? hoveredRevision);
 
-    // Token list for the panel, varies by mode
+    // Token list for the panel — reconstructs full tokens on demand
     let panelTokenList = $derived.by(() => {
         if (!panelRevision) return [];
         const idx = panelRevision.revision_idx - 1;
-        const tokens = panelRevision.tokens;
+        const tokens = getTokensAtRevision(idx);
         const entries = Object.entries(tokens);
 
         if (panelMode === 'diff') {
             const diffMap = new Map();
-            const removedTokens = []; // tokens completely gone from this revision
+            const removedTokens = [];
             if (idx > 0) {
-                const prev = revisions[idx - 1].tokens;
+                const prev = getTokensAtRevision(idx - 1);
                 const allKeys = new Set([...Object.keys(tokens), ...Object.keys(prev)]);
                 for (const key of allKeys) {
                     const c = tokens[key] ?? 0;
                     const p = prev[key] ?? 0;
                     if (c !== p) {
                         diffMap.set(key, c - p);
-                        // Token was in prev but completely removed
                         if (c === 0) removedTokens.push({ token: key, count: 0, diff: -p, isNew: false, firstRev: 0 });
                     }
                 }
@@ -125,7 +161,6 @@
         }
 
         if (panelMode === 'first-seen') {
-            // Only tokens that appear for the first time in this revision
             const revIdx = panelRevision.revision_idx;
             return entries
                 .filter(([token]) => (firstSeen.get(token) ?? 1) === revIdx)
@@ -133,7 +168,6 @@
                 .sort((a, b) => b.count - a.count || a.token.localeCompare(b.token));
         }
 
-        // 'frequency' — all tokens sorted by count in this revision
         return entries
             .map(([token, count]) => ({ token, count, diff: 0, isNew: false, firstRev: 0 }))
             .sort((a, b) => b.count - a.count);
@@ -142,10 +176,18 @@
     let mouseX = $state(0);
     let mouseY = $state(0);
 
-    // Annotations: title change + day boundaries
-    const TITLE_CHANGE_REV = 160;
+    let titleChanges = $derived.by(() => {
+        const changes = [];
+        let prevName = null;
+        for (const rev of revisions) {
+            if (prevName && rev.name !== prevName) {
+                changes.push({ rev: rev.revision_idx, from: prevName, to: rev.name });
+            }
+            prevName = rev.name;
+        }
+        return changes;
+    });
 
-    // Compute day boundaries from date_modified
     let dayBoundaries = $derived.by(() => {
         const boundaries = [];
         let prevDay = null;
@@ -159,9 +201,7 @@
         return boundaries;
     });
 
-    // Explicit margins for the top chart — used both in Plot and mouse handler
     const MARGIN = { left: 55, right: 15, top: 30, bottom: 10 };
-
     let lineChartEl = $state(null);
 
     function handleChartMouseMove(e) {
@@ -199,153 +239,177 @@
     }
 </script>
 
-<h3 class="page-title">
-    <a href="https://en.wikipedia.org/wiki/Killing_of_Alex_Pretti">Killing of Alex Pretti</a> — {revisions.length} revisions
-    <select class="ngram-select" bind:value={ngram}>
-        <option value="unigrams">Unigrams</option>
-        <option value="bigrams">Bigrams</option>
-    </select>
-</h3>
+<h3 class="page-title">WikiEdit Explorer</h3>
+
+<div class="search-bar">
+    <label>
+        Article
+        <select value={identifier} onchange={handleSelect} disabled={articles.length === 0}>
+            {#if articles.length === 0}
+                <option>Loading articles...</option>
+            {:else}
+                {#each articles as article}
+                    <option value={String(article.identifier)}>
+                        {article.name} ({article.revision_count} revisions)
+                    </option>
+                {/each}
+            {/if}
+        </select>
+    </label>
+</div>
+
+{#if error}
+    <p class="status error">Error: {error?.message ?? 'Unknown error'}</p>
+{/if}
 
 <div class="layout">
     <div class="charts-col">
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-            bind:this={lineChartEl}
-            onmousemove={handleChartMouseMove}
-            onmouseleave={handleChartMouseLeave}
-            onclick={handleChartClick}
-        >
-        <Plot
-            height={300}
-            axes={false}
-            marginLeft={MARGIN.left}
-            marginRight={MARGIN.right}
-            marginTop={MARGIN.top}
-            marginBottom={MARGIN.bottom}
-            x={{ label: null, domain: topDomain, axis: null }}
-            y={{ grid: true }}
-        >
-            <Line
-                data={filteredRevisions}
-                x="revision_idx"
-                y="total_tokens"
-                stroke="steelblue"
-                strokeWidth={1.5}
-            />
-            <Dot
-                data={filteredRevisions}
-                x="revision_idx"
-                y="total_tokens"
-                fill="steelblue"
-                r={3}
-            />
-            {#if pinnedRevision}
-                <Dot
-                    data={[pinnedRevision]}
+        {#if loading}
+            <div class="chart-placeholder">Loading revisions...</div>
+        {:else}
+            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+            <div
+                role="application"
+                bind:this={lineChartEl}
+                onmousemove={handleChartMouseMove}
+                onmouseleave={handleChartMouseLeave}
+                onclick={handleChartClick}
+            >
+            <Plot
+                height={300}
+                axes={false}
+                marginLeft={MARGIN.left}
+                marginRight={MARGIN.right}
+                marginTop={MARGIN.top}
+                marginBottom={MARGIN.bottom}
+                x={{ label: false, domain: topDomain, axis: false }}
+                y={{ grid: true }}
+            >
+                <Line
+                    data={filteredRevisions}
                     x="revision_idx"
                     y="total_tokens"
-                    fill="orange"
-                    stroke="white"
-                    strokeWidth={2}
-                    r={6}
-                    style="pointer-events: none"
+                    stroke="steelblue"
+                    strokeWidth={1.5}
                 />
-            {/if}
-            {#if hoveredRevision && (!pinnedRevision || hoveredRevision.revision_idx !== pinnedRevision.revision_idx)}
                 <Dot
-                    data={[hoveredRevision]}
+                    data={filteredRevisions}
                     x="revision_idx"
                     y="total_tokens"
-                    fill="orange"
-                    stroke="white"
-                    strokeWidth={2}
-                    r={5}
-                    opacity={0.6}
-                    style="pointer-events: none"
+                    fill="steelblue"
+                    r={3}
                 />
-            {/if}
-            {#if TITLE_CHANGE_REV >= topDomain[0] && TITLE_CHANGE_REV <= topDomain[1]}
-                <RuleX
-                    data={[{ x: TITLE_CHANGE_REV }]}
-                    x="x"
-                    stroke="#999"
-                    strokeWidth={1}
-                    strokeDasharray="4 3"
-                    style="pointer-events: none"
-                />
-                <Text
-                    data={[{ x: TITLE_CHANGE_REV - 2, text: '← ICE shooting in Minneapolis' }]}
-                    x="x"
-                    text="text"
-                    frameAnchor="top"
-                    textAnchor="end"
-                    dy={4}
-                    fontSize={10}
-                    fill="#666"
-                />
-                <Text
-                    data={[{ x: TITLE_CHANGE_REV + 2, text: 'Killing of Alex Pretti →' }]}
-                    x="x"
-                    text="text"
-                    frameAnchor="top"
-                    textAnchor="start"
-                    dy={4}
-                    fontSize={10}
-                    fill="#666"
-                />
-            {/if}
-            {#each dayBoundaries.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, day }}
-                <RuleX
-                    data={[{ x: rev }]}
-                    x="x"
-                    stroke="#b07d2b"
-                    strokeWidth={1}
-                    strokeDasharray="2 3"
-                    style="pointer-events: none"
-                />
-                <Text
-                    data={[{ x: rev + 2, text: day }]}
-                    x="x"
-                    text="text"
-                    frameAnchor="top"
-                    textAnchor="start"
-                    dy={18}
-                    fontSize={9}
-                    fill="#b07d2b"
-                />
-            {/each}
-            <AxisY title="total_tokens" />
-        </Plot>
+                {#if pinnedRevision}
+                    <Dot
+                        data={[pinnedRevision]}
+                        x="revision_idx"
+                        y="total_tokens"
+                        fill="orange"
+                        stroke="white"
+                        strokeWidth={2}
+                        r={6}
+                        style="pointer-events: none"
+                    />
+                {/if}
+                {#if hoveredRevision && (!pinnedRevision || hoveredRevision.revision_idx !== pinnedRevision.revision_idx)}
+                    <Dot
+                        data={[hoveredRevision]}
+                        x="revision_idx"
+                        y="total_tokens"
+                        fill="orange"
+                        stroke="white"
+                        strokeWidth={2}
+                        r={5}
+                        opacity={0.6}
+                        style="pointer-events: none"
+                    />
+                {/if}
+                {#each titleChanges.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, from, to }}
+                    <RuleX
+                        data={[{ x: rev }]}
+                        x="x"
+                        stroke="#999"
+                        strokeWidth={1}
+                        strokeDasharray="4 3"
+                        style="pointer-events: none"
+                    />
+                    <Text
+                        data={[{ x: rev - 2, text: `← ${from}` }]}
+                        x="x"
+                        text="text"
+                        frameAnchor="top"
+                        textAnchor="end"
+                        dy={4}
+                        fontSize={10}
+                        fill="#666"
+                    />
+                    <Text
+                        data={[{ x: rev + 2, text: `${to} →` }]}
+                        x="x"
+                        text="text"
+                        frameAnchor="top"
+                        textAnchor="start"
+                        dy={4}
+                        fontSize={10}
+                        fill="#666"
+                    />
+                {/each}
+                {#each dayBoundaries.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, day }}
+                    <RuleX
+                        data={[{ x: rev }]}
+                        x="x"
+                        stroke="#b07d2b"
+                        strokeWidth={1}
+                        strokeDasharray="2 3"
+                        style="pointer-events: none"
+                    />
+                    <Text
+                        data={[{ x: rev + 2, text: day }]}
+                        x="x"
+                        text="text"
+                        frameAnchor="top"
+                        textAnchor="start"
+                        dy={18}
+                        fontSize={9}
+                        fill="#b07d2b"
+                    />
+                {/each}
+                <AxisY title="total_tokens" />
+            </Plot>
+            </div>
+
+            <DeltaChart
+                {revisions}
+                {fullDomain}
+                margin={MARGIN}
+                titleChanges={titleChanges}
+                {dayBoundaries}
+                bind:brush
+            />
+        {/if}
         </div>
 
-        <DeltaChart
-            {revisions}
-            {fullDomain}
-            margin={MARGIN}
-            titleChangeRev={TITLE_CHANGE_REV}
-            {dayBoundaries}
-            bind:brush
-        />
+        {#if !loading && !error}
+            <TokenPanel
+                {panelRevision}
+                {pinnedRevision}
+                {panelMode}
+                {panelTokenList}
+                {modeInfo}
+                onunpin={() => pinnedRevision = null}
+                onmodechange={(mode) => panelMode = mode}
+            />
+        {/if}
     </div>
 
-    <TokenPanel
-        {panelRevision}
-        {pinnedRevision}
-        {panelMode}
-        {panelTokenList}
-        {modeInfo}
-        onunpin={() => pinnedRevision = null}
-        onmodechange={(mode) => panelMode = mode}
-    />
-</div>
-
-<RevisionTooltip
-    revision={hoveredRevision}
-    tokenDiff={tokenDiff}
-    {mouseX}
-    {mouseY}
-/>
+    {#if !loading && !error}
+        <RevisionTooltip
+            revision={hoveredRevision}
+            tokenDiff={tokenDiff}
+            {mouseX}
+            {mouseY}
+        />
+    {/if}
 
 <style>
     :global(#content) {
@@ -355,21 +419,29 @@
         justify-content: center;
         min-height: 100vh;
     }
+    .search-bar {
+        text-align: center;
+        margin: 1rem 0 0.5rem;
+    }
+    .search-bar label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #666;
+        gap: 0.3rem;
+    }
+    .search-bar select {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        min-width: 20rem;
+    }
     .page-title {
         text-align: center;
         color: #333;
-        margin: 0.5rem 0;
-    }
-    .ngram-select {
-        font-size: 13px;
-        padding: 2px 6px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: #f8f8f8;
-        color: #333;
-        margin-left: 8px;
-        vertical-align: middle;
-        cursor: pointer;
+        margin: 0.5rem 0 0;
     }
     .layout {
         display: flex;
@@ -383,5 +455,21 @@
     .charts-col {
         flex: 0 1 800px;
         min-width: 0;
+    }
+    .chart-placeholder {
+        height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-size: 0.9rem;
+    }
+    .status {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+    .status.error {
+        color: #d62728;
     }
 </style>
