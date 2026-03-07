@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { query } from '$app/server';
-import { PUBLIC_API_URL } from '$env/static/public';
+const PUBLIC_API_URL = 'https://api.complexstories.uvm.edu';
 
 interface ApiRevision {
 	revision_id: string;
