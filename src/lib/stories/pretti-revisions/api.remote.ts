@@ -1,6 +1,7 @@
 import * as v from 'valibot';
 import { query } from '$app/server';
-const PUBLIC_API_URL = 'https://api.complexstories.uvm.edu';
+// const PUBLIC_API_URL = 'https://api.complexstories.uvm.edu';
+const PUBLIC_API_URL = 'http://localhost:8000';
 
 interface ApiRevision {
 	revision_id: string;
@@ -39,14 +40,14 @@ export interface ArticleSummary {
 }
 
 export const listArticles = query(async () => {
-	const res = await fetch(`${PUBLIC_API_URL}/datalakes/wikigrams/revisions`);
+	const res = await fetch(`${PUBLIC_API_URL}/wikimedia/revisions`);
 	if (!res.ok) throw new Error(`API error: ${res.status}`);
 	const data: { articles: ArticleSummary[] } = await res.json();
 	return data.articles;
 });
 
 export const getRevisions = query(v.string(), async (identifier) => {
-	const res = await fetch(`${PUBLIC_API_URL}/datalakes/wikigrams/revisions/${identifier}`);
+	const res = await fetch(`${PUBLIC_API_URL}/wikimedia/revisions/${identifier}`);
 	if (!res.ok) throw new Error(`API error: ${res.status}`);
 
 	const data: ApiResponse = await res.json();
