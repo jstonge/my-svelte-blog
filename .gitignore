@@ -35,3 +35,4 @@ src/lib/stories/geo-story-1/data/uv.lock
 docs/plans/
 .playwright-mcp/
 .claude/settings.json
+.env*.local

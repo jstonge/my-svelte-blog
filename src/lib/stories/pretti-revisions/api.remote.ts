@@ -1,7 +1,7 @@
 import * as v from 'valibot';
 import { query } from '$app/server';
-// const PUBLIC_API_URL = 'https://api.complexstories.uvm.edu';
-const PUBLIC_API_URL = 'http://localhost:8000';
+const PUBLIC_API_URL = 'https://api.complexstories.uvm.edu';
+// const PUBLIC_API_URL = 'http://localhost:8000';
 
 interface ApiRevision {
 	revision_id: string;

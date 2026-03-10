@@ -1,44 +1,34 @@
 <script>
-    import { Plot, RuleX, Rect, AxisX, AxisY, BrushX } from 'svelteplot';
+    import { Plot, RuleX, RuleY, Rect, AxisX, AxisY, BrushX, Frame } from 'svelteplot';
 
-    let { revisions, fullDomain, margin, titleChanges = [], dayBoundaries, brush = $bindable() } = $props();
+    let { revisions, fullDomain, margin, titleChanges = [], xField = 'date', brush = $bindable() } = $props();
 </script>
 
 <Plot
     height={220}
-    axes={false}
     marginLeft={margin.left}
     marginRight={margin.right}
-    x={{ label: 'revision index', domain: fullDomain }}
-    y={{ grid: true }}
+    marginBottom={30}
+    x={{ label: false, domain: fullDomain, axis: false }}
+    y={{ grid: true, axis: false }}
 >
     <RuleX
         data={revisions}
-        x="revision_idx"
+        x={xField}
         y1={0}
         y2="token_diff"
         stroke={d => d.token_diff >= 0 ? '#2ca02c' : '#d62728'}
         strokeWidth={1.5}
     />
-    {#each titleChanges as { rev }}
+    {#each titleChanges as tc}
     <RuleX
-        data={[{ x: rev }]}
+        data={[{ x: xField === 'date' ? tc.date : tc.revision_idx }]}
         x="x"
         stroke="#999"
         strokeWidth={1}
         strokeDasharray="4 3"
         style="pointer-events: none"
     />
-    {/each}
-    {#each dayBoundaries as { rev }}
-        <RuleX
-            data={[{ x: rev }]}
-            x="x"
-            stroke="#b07d2b"
-            strokeWidth={1}
-            strokeDasharray="2 3"
-            style="pointer-events: none"
-        />
     {/each}
     {#if brush.enabled && brush.x1 != null && brush.x2 != null}
         <Rect
@@ -51,7 +41,9 @@
             style="pointer-events: none"
         />
     {/if}
+    <RuleY y={0} stroke="black" />
+    <Frame stroke="black" />
     <BrushX bind:brush />
-    <AxisX title="revision index" />
+    <AxisX tickFormat={xField === 'date' ? d => new Date(String(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : undefined} />
     <AxisY title="Δ tokens" />
 </Plot>

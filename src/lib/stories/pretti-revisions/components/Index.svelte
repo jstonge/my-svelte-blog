@@ -1,5 +1,5 @@
 <script>
-    import { Plot, Line, Dot, RuleX, AxisY, Text } from 'svelteplot';
+    import { Plot, Line, Dot, RuleX, RuleY, AxisX, AxisY, Text } from 'svelteplot';
 
     import { getRevisions, listArticles } from '../api.remote.js';
     import RevisionTooltip from './RevisionTooltip.svelte';
@@ -12,9 +12,19 @@
     let error = $state(null);
 
     let identifier = $state('82203651');
+    let searchQuery = $state('');
+    let searchFocused = $state(false);
+
+    let filteredArticles = $derived(
+        searchQuery.trim()
+            ? articles.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            : articles
+    );
 
     let hoveredRevision = $state(null);
     let pinnedRevision = $state(null);
+    let xMode = $state('time'); // 'time' | 'index'
+    let xField = $derived(xMode === 'time' ? 'date' : 'revision_idx');
 
     async function loadRevisions(id) {
         loading = true;
@@ -34,12 +44,11 @@
     listArticles().then(a => articles = a).catch(() => {});
     loadRevisions('82203651');
 
-    function handleSelect(e) {
-        const val = e.target.value;
-        if (val && val !== identifier) {
-            identifier = val;
-            loadRevisions(identifier);
-        }
+    function selectArticle(article) {
+        identifier = String(article.identifier);
+        searchQuery = '';
+        searchFocused = false;
+        loadRevisions(identifier);
     }
 
     // Reconstruct full token state up to a given revision index (lazy, on demand)
@@ -89,26 +98,44 @@
         return map;
     });
 
+    // Parse dates for time-based x-axis
+    let datedRevisions = $derived(
+        revisions.map(r => ({ ...r, date: new Date(r.date_modified) }))
+    );
+
     // Brush state for bottom chart → filters top chart
-    let brush = $state({ x1: 1, x2: 100, enabled: true });
-    let fullDomain = $derived([1, revisions.length || 1]);
+    let brush = $state({ x1: null, x2: null, enabled: true });
+    let fullDomain = $derived(
+        datedRevisions.length > 0
+            ? xMode === 'time'
+                ? [datedRevisions[0].date, datedRevisions[datedRevisions.length - 1].date]
+                : [1, datedRevisions.length]
+            : xMode === 'time' ? [new Date(), new Date()] : [1, 1]
+    );
 
     $effect(() => {
-        if (revisions.length > 0) {
-            brush = { x1: 1, x2: Math.min(100, revisions.length), enabled: true };
+        if (datedRevisions.length > 0) {
+            const endIdx = Math.min(99, datedRevisions.length - 1);
+            if (xMode === 'time') {
+                brush = { x1: datedRevisions[0].date, x2: datedRevisions[endIdx].date, enabled: true };
+            } else {
+                brush = { x1: 1, x2: endIdx + 1, enabled: true };
+            }
         }
     });
 
     let topDomain = $derived(
         brush.enabled && brush.x1 != null && brush.x2 != null
-            ? [Math.round(brush.x1), Math.round(brush.x2)]
+            ? [brush.x1, brush.x2]
             : fullDomain
     );
 
     let filteredRevisions = $derived(
         brush.enabled && brush.x1 != null && brush.x2 != null
-            ? revisions.filter(r => r.revision_idx >= Math.round(brush.x1) && r.revision_idx <= Math.round(brush.x2))
-            : revisions
+            ? xMode === 'time'
+                ? datedRevisions.filter(r => r.date >= brush.x1 && r.date <= brush.x2)
+                : datedRevisions.filter(r => r.revision_idx >= brush.x1 && r.revision_idx <= brush.x2)
+            : datedRevisions
     );
 
     let tokenDiff = $derived(hoveredRevision ? tokenDiffs[hoveredRevision.revision_idx - 1] : null);
@@ -179,33 +206,20 @@
     let titleChanges = $derived.by(() => {
         const changes = [];
         let prevName = null;
-        for (const rev of revisions) {
+        for (const rev of datedRevisions) {
             if (prevName && rev.name !== prevName) {
-                changes.push({ rev: rev.revision_idx, from: prevName, to: rev.name });
+                changes.push({ date: rev.date, revision_idx: rev.revision_idx, from: prevName, to: rev.name });
             }
             prevName = rev.name;
         }
         return changes;
     });
 
-    let dayBoundaries = $derived.by(() => {
-        const boundaries = [];
-        let prevDay = null;
-        for (const rev of revisions) {
-            const day = rev.date_modified?.slice(0, 10);
-            if (day && day !== prevDay) {
-                if (prevDay) boundaries.push({ rev: rev.revision_idx, day });
-                prevDay = day;
-            }
-        }
-        return boundaries;
-    });
-
-    const MARGIN = { left: 55, right: 15, top: 30, bottom: 10 };
+    const MARGIN = { left: 55, right: 15, top: 30, bottom: 30 };
     let lineChartEl = $state(null);
 
     function handleChartMouseMove(e) {
-        if (!lineChartEl) return;
+        if (!lineChartEl || filteredRevisions.length === 0) return;
         const svg = lineChartEl.querySelector('svg');
         if (!svg) return;
         const rect = svg.getBoundingClientRect();
@@ -216,12 +230,30 @@
         if (plotWidth <= 0) return;
 
         const frac = Math.max(0, Math.min(1, (e.clientX - plotLeft) / plotWidth));
-        const idx = Math.round(frac * (filteredRevisions.length - 1));
-        if (idx >= 0 && idx < filteredRevisions.length) {
-            hoveredRevision = filteredRevisions[idx];
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+
+        let bestIdx = 0;
+        if (xMode === 'time') {
+            const t0 = topDomain[0].getTime();
+            const t1 = topDomain[1].getTime();
+            const targetTime = t0 + frac * (t1 - t0);
+            let bestDist = Infinity;
+            for (let i = 0; i < filteredRevisions.length; i++) {
+                const dist = Math.abs(filteredRevisions[i].date.getTime() - targetTime);
+                if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+            }
+        } else {
+            const idx0 = topDomain[0];
+            const idx1 = topDomain[1];
+            const targetIdx = idx0 + frac * (idx1 - idx0);
+            let bestDist = Infinity;
+            for (let i = 0; i < filteredRevisions.length; i++) {
+                const dist = Math.abs(filteredRevisions[i].revision_idx - targetIdx);
+                if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+            }
         }
+        hoveredRevision = filteredRevisions[bestIdx];
+        mouseX = e.clientX;
+        mouseY = e.clientY;
     }
 
     function handleChartClick() {
@@ -244,17 +276,26 @@
 <div class="search-bar">
     <label>
         Article
-        <select value={identifier} onchange={handleSelect} disabled={articles.length === 0}>
-            {#if articles.length === 0}
-                <option>Loading articles...</option>
-            {:else}
-                {#each articles as article}
-                    <option value={String(article.identifier)}>
-                        {article.name} ({article.revision_count} revisions)
-                    </option>
-                {/each}
+        <div class="search-wrapper">
+            <input
+                type="text"
+                placeholder="Search articles..."
+                bind:value={searchQuery}
+                onfocus={() => searchFocused = true}
+                onblur={() => setTimeout(() => searchFocused = false, 150)}
+            />
+            {#if searchFocused && filteredArticles.length > 0}
+                <ul class="search-results">
+                    {#each filteredArticles as article}
+                        <li>
+                            <button onmousedown={() => selectArticle(article)}>
+                                {article.name} <span class="rev-count">({article.revision_count} revisions)</span>
+                            </button>
+                        </li>
+                    {/each}
+                </ul>
             {/if}
-        </select>
+        </div>
     </label>
 </div>
 
@@ -264,6 +305,11 @@
 
 <div class="layout">
     <div class="charts-col">
+        <div class="x-mode-toggle">
+            <span class="toggle-label">x-axis</span>
+            <button class:active={xMode === 'time'} onclick={() => xMode = 'time'}>Time</button>
+            <button class:active={xMode === 'index'} onclick={() => xMode = 'index'}>Revision #</button>
+        </div>
         {#if loading}
             <div class="chart-placeholder">Loading revisions...</div>
         {:else}
@@ -282,19 +328,12 @@
                 marginRight={MARGIN.right}
                 marginTop={MARGIN.top}
                 marginBottom={MARGIN.bottom}
-                x={{ label: false, domain: topDomain, axis: false }}
+                x={{ label: false, domain: topDomain }}
                 y={{ grid: true }}
             >
-                <Line
-                    data={filteredRevisions}
-                    x="revision_idx"
-                    y="total_tokens"
-                    stroke="steelblue"
-                    strokeWidth={1.5}
-                />
                 <Dot
                     data={filteredRevisions}
-                    x="revision_idx"
+                    x={xField}
                     y="total_tokens"
                     fill="steelblue"
                     r={3}
@@ -302,7 +341,7 @@
                 {#if pinnedRevision}
                     <Dot
                         data={[pinnedRevision]}
-                        x="revision_idx"
+                        x={xField}
                         y="total_tokens"
                         fill="orange"
                         stroke="white"
@@ -311,10 +350,28 @@
                         style="pointer-events: none"
                     />
                 {/if}
+                {#if hoveredRevision}
+                    <RuleX
+                        data={[{ x: xMode === 'time' ? hoveredRevision.date : hoveredRevision.revision_idx }]}
+                        x="x"
+                        stroke="#999"
+                        strokeWidth={0.5}
+                        strokeDasharray="3 2"
+                        style="pointer-events: none"
+                    />
+                    <RuleY
+                        data={[{ y: hoveredRevision.total_tokens }]}
+                        y="y"
+                        stroke="#999"
+                        strokeWidth={0.5}
+                        strokeDasharray="3 2"
+                        style="pointer-events: none"
+                    />
+                {/if}
                 {#if hoveredRevision && (!pinnedRevision || hoveredRevision.revision_idx !== pinnedRevision.revision_idx)}
                     <Dot
                         data={[hoveredRevision]}
-                        x="revision_idx"
+                        x={xField}
                         y="total_tokens"
                         fill="orange"
                         stroke="white"
@@ -324,9 +381,9 @@
                         style="pointer-events: none"
                     />
                 {/if}
-                {#each titleChanges.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, from, to }}
+                {#each titleChanges.filter(d => xMode === 'time' ? d.date >= topDomain[0] && d.date <= topDomain[1] : d.revision_idx >= topDomain[0] && d.revision_idx <= topDomain[1]) as tc}
                     <RuleX
-                        data={[{ x: rev }]}
+                        data={[{ x: xMode === 'time' ? tc.date : tc.revision_idx }]}
                         x="x"
                         stroke="#999"
                         strokeWidth={1}
@@ -334,56 +391,30 @@
                         style="pointer-events: none"
                     />
                     <Text
-                        data={[{ x: rev - 2, text: `← ${from}` }]}
-                        x="x"
-                        text="text"
-                        frameAnchor="top"
-                        textAnchor="end"
-                        dy={4}
-                        fontSize={10}
-                        fill="#666"
-                    />
-                    <Text
-                        data={[{ x: rev + 2, text: `${to} →` }]}
+                        data={[{ x: xMode === 'time' ? tc.date : tc.revision_idx, text: tc.to }]}
                         x="x"
                         text="text"
                         frameAnchor="top"
                         textAnchor="start"
+                        dx={4}
                         dy={4}
                         fontSize={10}
                         fill="#666"
                     />
                 {/each}
-                {#each dayBoundaries.filter(d => d.rev >= topDomain[0] && d.rev <= topDomain[1]) as { rev, day }}
-                    <RuleX
-                        data={[{ x: rev }]}
-                        x="x"
-                        stroke="#b07d2b"
-                        strokeWidth={1}
-                        strokeDasharray="2 3"
-                        style="pointer-events: none"
-                    />
-                    <Text
-                        data={[{ x: rev + 2, text: day }]}
-                        x="x"
-                        text="text"
-                        frameAnchor="top"
-                        textAnchor="start"
-                        dy={18}
-                        fontSize={9}
-                        fill="#b07d2b"
-                    />
-                {/each}
+                <RuleY y={0} stroke="black" />
+                <RuleX x={topDomain[0]} stroke="black" />
+                <AxisX />
                 <AxisY title="total_tokens" />
             </Plot>
             </div>
 
             <DeltaChart
-                {revisions}
+                revisions={datedRevisions}
                 {fullDomain}
                 margin={MARGIN}
-                titleChanges={titleChanges}
-                {dayBoundaries}
+                {titleChanges}
+                {xField}
                 bind:brush
             />
         {/if}
@@ -431,12 +462,48 @@
         color: #666;
         gap: 0.3rem;
     }
-    .search-bar select {
+    .search-wrapper {
+        position: relative;
+    }
+    .search-wrapper input {
         padding: 0.4rem 0.6rem;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 0.9rem;
         min-width: 20rem;
+    }
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin: 2px 0 0;
+        padding: 0;
+        list-style: none;
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .search-results button {
+        display: block;
+        width: 100%;
+        padding: 0.4rem 0.6rem;
+        border: none;
+        background: none;
+        text-align: left;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+    .search-results button:hover {
+        background: #f0f0f0;
+    }
+    .rev-count {
+        color: #999;
+        font-size: 0.75rem;
     }
     .page-title {
         text-align: center;
@@ -455,6 +522,40 @@
     .charts-col {
         flex: 0 1 800px;
         min-width: 0;
+    }
+    .x-mode-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        justify-content: flex-end;
+        margin-bottom: 0.3rem;
+    }
+    .toggle-label {
+        font-size: 11px;
+        color: #666;
+        margin-right: 6px;
+    }
+    .x-mode-toggle button {
+        font-size: 12px;
+        padding: 3px 10px;
+        border: 1px solid #ccc;
+        background: #f8f8f8;
+        color: #666;
+        cursor: pointer;
+        margin-right: -1px;
+    }
+    .x-mode-toggle button:first-child {
+        border-radius: 4px 0 0 4px;
+    }
+    .x-mode-toggle button:last-child {
+        border-radius: 0 4px 4px 0;
+    }
+    .x-mode-toggle button.active {
+        background: #333;
+        color: white;
+        border-color: #333;
+        z-index: 1;
+        position: relative;
     }
     .chart-placeholder {
         height: 420px;

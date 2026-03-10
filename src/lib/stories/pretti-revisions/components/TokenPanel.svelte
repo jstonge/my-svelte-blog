@@ -56,8 +56,7 @@
         flex: 1;
         min-width: 250px;
         max-width: 500px;
-        min-height: 120px;
-        max-height: calc(100vh - 4rem);
+        height: 500px;
         display: flex;
         flex-direction: column;
     }
