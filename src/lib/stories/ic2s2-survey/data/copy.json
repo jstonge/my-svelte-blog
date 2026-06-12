@@ -1,0 +1,23 @@
+{
+	"title": "IC2S2 Survey",
+	"subtitle": "But what is similarity?",
+	"authors": [
+		{
+			"name": "Jonathan St-Onge",
+			"url": "https://complexstories.uvm.edu/author/jonathan-st-onge"
+		}
+	],
+	"date": "Jun 12, 2026",
+	"intro": "We showed you several ways of embedding documents and projecting them down to two dimensions. Each combination tells a slightly different story about which documents are “similar.” We'd love to know which one matched your own intuition best.",
+	"combinationQuestion": "Which combination of embedding and projection did you prefer to measure similarity between documents?",
+	"combinationOptions": [
+		{ "value": "tfidf-pca", "label": "TF-IDF + PCA" },
+		{ "value": "tfidf-umap", "label": "TF-IDF + UMAP" },
+		{ "value": "sbert-tsne", "label": "SBERT + t-SNE" },
+		{ "value": "sbert-umap", "label": "SBERT + UMAP" },
+		{ "value": "openai-tsne", "label": "OpenAI + t-SNE" },
+		{ "value": "openai-umap", "label": "OpenAI + UMAP" }
+	],
+	"whyQuestion": "Why did you prefer that combination?",
+	"whyPlaceholder": "Tell us what made this combination feel right…"
+}
